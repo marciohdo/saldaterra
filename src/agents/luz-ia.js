@@ -49,11 +49,11 @@ QUANDO TODAS AS 7 RESPOSTAS ESTIVEREM COLETADAS:
 
 Coloque EXATAMENTE esta linha como PRIMEIRA linha da sua resposta, antes de qualquer texto:
 
-#DADOS:{"visitante_nome":"NOME","visitante_idade":IDADE,"vistitante_est_civil":"ESTADO_CIVIL","visitante_criancas":"CRIANCAS","visitante_endereco":"ENDERECO","visitante_bairro":"BAIRRO","visitante_cidade":"CIDADE"}
+#DADOS:{"nome_completo":"NOME","idade":IDADE,"estado_civil":"ESTADO_CIVIL","tem_criancas":"CRIANCAS","endereco":"ENDERECO","bairro":"BAIRRO","cidade":"CIDADE"}
 
 Regras do marcador #DADOS:
 - Deve ser a PRIMEIRA linha, antes de qualquer outro texto
-- visitante_idade deve ser número inteiro sem aspas
+- idade deve ser número inteiro sem aspas
 - Emita UMA ÚNICA VEZ durante toda a conversa
 - Após o marcador, agradeça as informações e diga que vai encontrar o PG ideal
 
