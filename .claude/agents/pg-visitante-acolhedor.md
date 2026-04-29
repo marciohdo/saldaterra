@@ -1,7 +1,7 @@
 ---
 name: pg-visitante-acolhedor
 description: Use this agent when a leader (líder) needs to report or update the attendance frequency of a visitor (visitante) at Igreja Sal da Terra, or when the church needs to gather information about visitor participation to connect them with a Pequeno Grupo (PG).
-model: claude-opus-4-7
+model: opus
 memory: project
 ---
 
