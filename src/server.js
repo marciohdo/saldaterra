@@ -2,6 +2,7 @@ require('./load-env');
 const express = require('express');
 const { sendText } = require('./evolution-api');
 const { reply } = require('./claude');
+const { inserirVisitante } = require('./supabase');
 const { SYSTEM_PROMPT: LUZ_IA } = require('./agents/luz-ia');
 const { SYSTEM_PROMPT: PG_VISITANTE } = require('./agents/pg-visitante');
 
@@ -9,6 +10,7 @@ const app = express();
 app.use(express.json());
 
 const PG_PREFIX = /^lider:/i;
+const DADOS_RE = /^#DADOS:(\{.*\})/;
 
 function extractText(data) {
   return (
@@ -24,7 +26,6 @@ function log(phone, msg) {
   console.log(`[${ts}] [${phone ?? 'server'}] ${msg}`);
 }
 
-// Captura QUALQUER requisição recebida para facilitar o debug
 app.use((req, _res, next) => {
   console.log(`\n>>> ${req.method} ${req.path}`);
   if (Object.keys(req.body ?? {}).length) {
@@ -37,42 +38,22 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
   res.sendStatus(200);
 
   const body = req.body ?? {};
-  const event = body.event ?? body.type; // algumas versões usam "type"
-  const data = body.data ?? body;
+  const event = body.event ?? body.type;
+  const data  = body.data ?? body;
 
   log(null, `Evento recebido: "${event}"`);
 
-  // Aceita variações do nome do evento entre versões da Evolution API
   const isMessage = /messages[\.\-_]upsert/i.test(event ?? '');
-  if (!isMessage) {
-    log(null, `Evento ignorado (não é mensagem): ${event}`);
-    return;
-  }
-
-  if (data?.key?.fromMe) {
-    log(null, 'Ignorado: mensagem enviada pelo próprio bot');
-    return;
-  }
+  if (!isMessage) return;
+  if (data?.key?.fromMe) return;
 
   const remoteJid = data?.key?.remoteJid ?? '';
-  if (!remoteJid.includes('@')) {
-    log(null, `remoteJid inválido: "${remoteJid}"`);
-    return;
-  }
-
-  if (remoteJid.endsWith('@g.us')) {
-    log(null, 'Ignorado: mensagem de grupo');
-    return;
-  }
+  if (!remoteJid.includes('@')) return;
+  if (remoteJid.endsWith('@g.us')) return;
 
   const phone = remoteJid.replace(/@.*/, '');
-  const text = extractText(data);
-
-  if (!text) {
-    log(phone, 'Ignorado: sem texto (mídia ou tipo não suportado)');
-    log(phone, 'message keys: ' + JSON.stringify(Object.keys(data?.message ?? {})));
-    return;
-  }
+  const text  = extractText(data);
+  if (!text) return;
 
   log(phone, `Mensagem recebida: "${text}"`);
 
@@ -82,9 +63,32 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
 
   try {
     const response = await reply(phone, text, systemPrompt);
-    log(phone, `Resposta gerada: "${response.slice(0, 80)}..."`);
-    await sendText(phone, response);
-    log(phone, 'Mensagem enviada com sucesso');
+
+    // Verifica se a resposta contém o marcador #DADOS
+    const match = response.match(DADOS_RE);
+    let mensagem = response;
+
+    if (match) {
+      try {
+        const dados = JSON.parse(match[1]);
+        dados.visitante_telefone   = phone;
+        dados.visitante_data_contato = new Date().toLocaleDateString('pt-BR');
+        dados.visitante_status     = 'ATIVO';
+
+        await inserirVisitante(dados);
+        log(phone, `Visitante salvo no Supabase: ${dados.visitante_nome}`);
+      } catch (err) {
+        log(phone, `Erro ao salvar no Supabase: ${err.message}`);
+      }
+
+      // Remove o marcador #DADOS antes de enviar ao WhatsApp
+      mensagem = response.replace(DADOS_RE, '').trimStart();
+    }
+
+    if (mensagem) {
+      await sendText(phone, mensagem);
+      log(phone, 'Mensagem enviada com sucesso');
+    }
   } catch (err) {
     log(phone, `ERRO: ${err.message}`);
     console.error(err);
