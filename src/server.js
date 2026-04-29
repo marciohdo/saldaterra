@@ -1,17 +1,17 @@
 require('./load-env');
-const express     = require('express');
-const { sendText }        = require('./evolution-api');
-const { reply }           = require('./claude');
-const { inserirVisitante } = require('./supabase');
-const conversation        = require('./conversation');
+const express = require('express');
+const { sendText }          = require('./evolution-api');
+const { reply }             = require('./claude');
+const { inserirVisitante, buscarPGProximo } = require('./supabase');
+const conversation          = require('./conversation');
 const { SYSTEM_PROMPT: LUZ_IA }      = require('./agents/luz-ia');
 const { SYSTEM_PROMPT: PG_VISITANTE } = require('./agents/pg-visitante');
 
 const app = express();
 app.use(express.json());
 
-const PG_PREFIX  = /^lider:/i;
-const DADOS_RE   = /^#DADOS:(\{.*\})/;
+const PG_PREFIX   = /^lider:/i;
+const DADOS_RE    = /^#DADOS:(\{.*\})/;
 const REMINDER_MS = 2 * 60 * 1000; // 2 minutos
 
 function extractText(data) {
@@ -28,7 +28,7 @@ function log(phone, msg) {
   console.log(`[${ts}] [${phone ?? 'server'}] ${msg}`);
 }
 
-// Lembrete automático a cada 30s — dispara mensagem se visitante ficou 2 min sem responder
+// Lembrete automático — dispara se visitante ficou 2 min sem responder
 setInterval(async () => {
   const inativos = conversation.getInactive(REMINDER_MS);
   for (const phone of inativos) {
@@ -36,7 +36,6 @@ setInterval(async () => {
       const lembrete =
         'Oi! 😊 Ainda estou aqui esperando por você. Me responde para eu te ajudar a encontrar o seu Pequeno Grupo! 🌟';
       await sendText(phone, lembrete);
-      // Atualiza lastActivity para não enviar spam
       conversation.push(phone, 'assistant', lembrete);
       log(phone, 'Lembrete enviado (2 min sem resposta)');
     } catch (err) {
@@ -77,24 +76,46 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
   log(phone, `Mensagem recebida: "${text}"`);
 
   const systemPrompt = PG_PREFIX.test(text) ? PG_VISITANTE : LUZ_IA;
-  const agente = PG_PREFIX.test(text) ? 'PG Visitante' : 'Luz.ia';
-  log(phone, `Roteado para: ${agente}`);
+  log(phone, `Roteado para: ${PG_PREFIX.test(text) ? 'PG Visitante' : 'Luz.ia'}`);
 
   try {
     const response = await reply(phone, text, systemPrompt);
-    const match = response.match(DADOS_RE);
-    let mensagem = response;
+    const match    = response.match(DADOS_RE);
+    let mensagem   = response;
 
     if (match && !conversation.isSaved(phone)) {
       try {
-        const dados = JSON.parse(match[1]);
-        dados.visitante_telefone    = phone;
-        dados.visitante_data_contato = new Date().toLocaleDateString('pt-BR');
-        dados.visitante_status      = 'ATIVO';
+        const json = JSON.parse(match[1]);
 
-        await inserirVisitante(dados);
+        // Busca o PG mais próximo por cidade e bairro
+        let liderTelefone = '';
+        try {
+          const pg = await buscarPGProximo(json.cidade, json.bairro);
+          liderTelefone = pg?.CONTATO ?? '';
+          log(phone, `PG encontrado: ${pg?.LIDER ?? 'nenhum'} — ${liderTelefone}`);
+        } catch (err) {
+          log(phone, `Aviso: não foi possível buscar PG — ${err.message}`);
+        }
+
+        // Monta o objeto com os nomes das colunas do banco
+        const dbRecord = {
+          visitante_nome:         json.nome_completo,
+          visitante_telefone:     phone,
+          lider_telefone:         liderTelefone,
+          visitante_idade:        json.idade,
+          vistitante_est_civil:   json.estado_civil,
+          visitante_criancas:     json.tem_criancas,
+          visitante_endereco:     json.endereco,
+          visitante_bairro:       json.bairro,
+          visitante_cidade:       json.cidade,
+          visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
+          visitante_status:       'ATIVO',
+          Data_atu:               new Date().toISOString(),
+        };
+
+        await inserirVisitante(dbRecord);
         conversation.markSaved(phone);
-        log(phone, `Visitante salvo no Supabase: ${dados.visitante_nome}`);
+        log(phone, `Visitante salvo: ${dbRecord.visitante_nome}`);
       } catch (err) {
         log(phone, `Erro ao salvar no Supabase: ${err.message}`);
       }
@@ -119,5 +140,5 @@ app.listen(PORT, () => {
   console.log(`\nServidor rodando na porta ${PORT}`);
   console.log(`Webhook: POST /webhook/5c697459-3a69-4009-b724-43069e591f81`);
   console.log(`Health:  GET  /health`);
-  console.log(`Lembrete automático: a cada 2 min sem resposta\n`);
+  console.log(`Lembrete: a cada 2 min sem resposta\n`);
 });
