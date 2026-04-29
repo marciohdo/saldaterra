@@ -5,7 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "tunnel": "powershell -ExecutionPolicy Bypass -File start.ps1"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
