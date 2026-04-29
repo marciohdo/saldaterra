@@ -10,12 +10,21 @@ const HEADERS = {
 };
 
 async function inserirVisitante(dados) {
-  const res = await fetch(`${BASE}/rest/v1/LISTA_ACIONAMENTOS`, {
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS`;
+  console.log('[supabase] POST', url);
+  console.log('[supabase] dados:', JSON.stringify(dados));
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { ...HEADERS, Prefer: 'return=minimal' },
+    headers: { ...HEADERS, Prefer: 'return=representation' },
     body: JSON.stringify(dados),
   });
-  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+
+  const body = await res.text();
+  console.log(`[supabase] status: ${res.status} | body: ${body}`);
+
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${body}`);
+  return JSON.parse(body);
 }
 
 // Busca o PG mais adequado por cidade e bairro na LISTA_PGS
