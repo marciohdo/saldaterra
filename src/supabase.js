@@ -9,6 +9,9 @@ const HEADERS = {
   Authorization: `Bearer ${KEY}`,
 };
 
+const { determinarPerfil }    = require('./perfil');
+const { distanciaVisitantePG } = require('./maps');
+
 async function inserirVisitante(dados) {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS`;
   console.log('[supabase] POST', url);
