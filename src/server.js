@@ -97,8 +97,7 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
         if (cadastroExistente) {
           log(phone, `Visitante já cadastrado: ${cadastroExistente.visitante_nome}`);
           conversation.markSaved(phone);
-          const aviso = `Oi ${json.nome_completo}! 😊 Você já tem um cadastro aqui com a gente. Seu líder de referência é ${cadastroExistente.lider || 'um de nossos líderes'}. Se precisar de ajuda ou quiser atualizar seus dados, é só me falar! 🌟`;
-          mensagem = aviso;
+          mensagem = `Oi ${json.nome_completo}! 😊 Você já tem um cadastro aqui com a gente. Em breve alguém da nossa equipe vai entrar em contato com você. Fique de olho no WhatsApp! 🌟`;
         } else {
           // Busca o PG mais próximo por cidade e bairro
           let liderNome     = '';
@@ -132,6 +131,28 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
           await inserirVisitante(dbRecord);
           conversation.markSaved(phone);
           log(phone, `Visitante salvo: ${dbRecord.visitante_nome}`);
+
+          // Notifica o líder via WhatsApp usando o tom do PG Visitante Acolhedor
+          if (liderTelefone) {
+            const msgLider =
+              `Oi líder ${liderNome}, que alegria! 😊 Um novo visitante foi indicado para o seu PG.\n\n` +
+              `Nome: ${json.nome_completo}\n` +
+              `Telefone: ${phone}\n` +
+              `Idade: ${json.idade}\n` +
+              `Estado civil: ${json.estado_civil}\n` +
+              `Crianças: ${json.tem_criancas}\n` +
+              `Endereço: ${json.endereco}, ${json.bairro} - ${json.cidade}\n\n` +
+              `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
+            try {
+              await sendTyping(liderTelefone);
+              await sendText(liderTelefone, msgLider);
+              log(phone, `Líder ${liderNome} notificado: ${liderTelefone}`);
+            } catch (err) {
+              log(phone, `Aviso: não foi possível notificar líder — ${err.message}`);
+            }
+          }
+
+          // Resposta ao visitante — sem revelar dados do líder
           mensagem = response.replace(DADOS_RE, '').trimStart();
         }
       } catch (err) {
