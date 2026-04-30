@@ -110,11 +110,14 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
           conversation.markSaved(phone);
           mensagem = `Oi ${json.nome_completo}! 😊 Você já tem um cadastro aqui com a gente. Em breve alguém da nossa equipe vai entrar em contato com você. Fique de olho no WhatsApp! 🌟`;
         } else {
-          // Busca o PG mais próximo por cidade e bairro
+          // Busca o PG mais próximo por perfil + distância real
           let liderNome     = '';
           let liderTelefone = '';
           try {
-            const pg  = await buscarPGProximo(json.cidade, json.bairro);
+            const pg  = await buscarPGProximo(
+              json.cidade, json.bairro,
+              json.estado_civil, json.tem_criancas, json.idade, json.endereco
+            );
             liderNome     = pg?.LIDER   ?? '';
             liderTelefone = pg?.CONTATO ?? '';
             log(phone, `PG encontrado: ${liderNome} — ${liderTelefone}`);
