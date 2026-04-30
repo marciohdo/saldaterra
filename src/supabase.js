@@ -30,24 +30,58 @@ async function inserirVisitante(dados) {
   return JSON.parse(body);
 }
 
-// Busca o PG mais adequado por cidade e bairro na LISTA_PGS
-async function buscarPGProximo(cidade, bairro) {
-  const cidadeEnc = encodeURIComponent(cidade);
-  const url = `${BASE}/rest/v1/LISTA_PGS?CIDADE=ilike.${cidadeEnc}&select=LIDER,CONTATO,BAIRRO,CIDADE,REDE,PERFIL,"DIA DO PG",HORARIO`;
+// Busca o PG mais próximo usando perfil do visitante + distância real via Google Maps
+// Replica a lógica do fluxo n8n
+async function buscarPGProximo(cidade, bairro, estadoCivil, temCriancas, idade, endereco) {
+  const perfil = determinarPerfil(estadoCivil, temCriancas, idade);
+  console.log(`[supabase] buscarPGProximo — perfil=${perfil} cidade=${cidade}`);
+
+  const pg = await _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade);
+  if (pg) return pg;
+
+  // Fallback: tenta com perfil Familia
+  if (perfil !== 'Familia') {
+    console.log('[supabase] Fallback para perfil Familia');
+    return _buscarPorPerfil('Familia', cidade, bairro, endereco, estadoCivil, temCriancas, idade);
+  }
+  return null;
+}
+
+async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade) {
+  const cidadeEnc  = encodeURIComponent(cidade);
+  const perfilEnc  = encodeURIComponent(perfil);
+  const url = `${BASE}/rest/v1/LISTA_PGS` +
+    `?CIDADE=ilike.${cidadeEnc}` +
+    `&PERFIL=eq.${perfilEnc}` +
+    `&Capacidade=is.null` +
+    `&select=LIDER,CONTATO,BAIRRO,CIDADE,REDE,PERFIL,"DIA DO PG",HORARIO,ENDEREÇO`;
 
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
 
   const pgs = await res.json();
+  console.log(`[supabase] PGs encontrados para perfil=${perfil}: ${pgs.length}`);
   if (!pgs.length) return null;
 
-  // Tenta encontrar PG no mesmo bairro (case-insensitive)
-  const bairroNorm = bairro?.toLowerCase().trim() ?? '';
-  const mesmoBairro = pgs.find(
-    (pg) => pg.BAIRRO?.toLowerCase().trim() === bairroNorm
+  // Calcula distância real para cada PG e ordena pelo mais próximo
+  const comDistancia = await Promise.all(
+    pgs.map(async (pg) => {
+      try {
+        const km = await distanciaVisitantePG(
+          endereco, bairro, cidade,
+          pg['ENDEREÇO'] ?? '', pg.BAIRRO ?? '', pg.CIDADE ?? ''
+        );
+        return { ...pg, distancia_km: km ?? Infinity };
+      } catch {
+        return { ...pg, distancia_km: Infinity };
+      }
+    })
   );
 
-  return mesmoBairro ?? pgs[0]; // fallback: primeiro PG da cidade
+  comDistancia.sort((a, b) => a.distancia_km - b.distancia_km);
+  const melhor = comDistancia[0];
+  console.log(`[supabase] PG mais próximo: ${melhor.LIDER} — ${melhor.distancia_km} km`);
+  return melhor;
 }
 
 // Verifica se o visitante já tem cadastro pelo telefone ou nome
