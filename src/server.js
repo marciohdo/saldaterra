@@ -91,6 +91,24 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
 
   log(phone, `Mensagem recebida: "${text}"`);
 
+  // Na primeira mensagem da sessão, verifica se o visitante já tem cadastro
+  if (!PG_PREFIX.test(text) && !conversation.get(phone).length) {
+    try {
+      const cadastrado = await buscarVisitantePorTelefone(phone);
+      if (cadastrado) {
+        log(phone, `Visitante já cadastrado (${cadastrado.visitante_nome}) — bloqueando fluxo`);
+        const msg =
+          `Oi ${cadastrado.visitante_nome}! 😊 Você já tem um cadastro aqui com a gente.\n\n` +
+          `Para continuar sua jornada na fé, venha nos visitar pessoalmente na igreja. Estamos te esperando de braços abertos! 🙏`;
+        await sendTyping(phone);
+        await sendText(phone, msg);
+        return;
+      }
+    } catch (err) {
+      log(phone, `Aviso: erro ao verificar cadastro — ${err.message}`);
+    }
+  }
+
   const systemPrompt = PG_PREFIX.test(text) ? PG_VISITANTE : LUZ_IA;
   log(phone, `Roteado para: ${PG_PREFIX.test(text) ? 'PG Visitante' : 'Luz.ia'}`);
 
@@ -108,7 +126,7 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
         if (cadastroExistente) {
           log(phone, `Visitante já cadastrado: ${cadastroExistente.visitante_nome}`);
           conversation.markSaved(phone);
-          mensagem = `Oi ${json.nome_completo}! 😊 Você já tem um cadastro aqui com a gente. Em breve alguém da nossa equipe vai entrar em contato com você. Fique de olho no WhatsApp! 🌟`;
+          mensagem = `Oi ${json.nome_completo}! 😊 Você já tem um cadastro aqui com a gente. Para continuar sua jornada na fé, venha nos visitar pessoalmente na igreja. Estamos te esperando! 🙏`;
         } else {
           // Busca o PG mais próximo por perfil + distância real
           let liderNome     = '';
