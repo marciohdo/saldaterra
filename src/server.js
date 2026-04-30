@@ -2,7 +2,7 @@ require('./load-env');
 const express = require('express');
 const { sendText, sendTyping, markAsRead } = require('./evolution-api');
 const { reply }             = require('./claude');
-const { inserirVisitante, buscarPGProximo, buscarVisitante } = require('./supabase');
+const { inserirVisitante, buscarPGProximo, buscarVisitante, buscarVisitantePorTelefone } = require('./supabase');
 const conversation          = require('./conversation');
 const { SYSTEM_PROMPT: LUZ_IA }      = require('./agents/luz-ia');
 const { SYSTEM_PROMPT: PG_VISITANTE } = require('./agents/pg-visitante');

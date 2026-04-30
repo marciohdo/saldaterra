@@ -112,4 +112,4 @@ async function buscarVisitante(telefone, nome) {
   return rows2[0] ?? null;
 }
 
-module.exports = { inserirVisitante, buscarPGProximo, buscarVisitante };
+module.exports = { inserirVisitante, buscarPGProximo, buscarVisitante, buscarVisitantePorTelefone };
