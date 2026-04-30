@@ -1,6 +1,6 @@
 require('./load-env');
 const express = require('express');
-const { sendText, sendTyping } = require('./evolution-api');
+const { sendText, sendTyping, markAsRead } = require('./evolution-api');
 const { reply }             = require('./claude');
 const { inserirVisitante, buscarPGProximo } = require('./supabase');
 const conversation          = require('./conversation');
