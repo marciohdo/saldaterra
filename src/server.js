@@ -35,6 +35,7 @@ setInterval(async () => {
     try {
       const lembrete =
         'Oi! 😊 Ainda estou aqui esperando por você. Me responde para eu te ajudar a encontrar o seu Pequeno Grupo! 🌟';
+      await sendTyping(phone);
       await sendText(phone, lembrete);
       conversation.push(phone, 'assistant', lembrete);
       log(phone, 'Lembrete enviado (2 min sem resposta)');
@@ -127,6 +128,7 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
     }
 
     if (mensagem) {
+      await sendTyping(phone);
       await sendText(phone, mensagem);
       log(phone, 'Mensagem enviada com sucesso');
     }
