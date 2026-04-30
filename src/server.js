@@ -92,43 +92,52 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
       try {
         const json = JSON.parse(match[1]);
 
-        // Busca o PG mais próximo por cidade e bairro
-        let liderNome     = '';
-        let liderTelefone = '';
-        try {
-          const pg = await buscarPGProximo(json.cidade, json.bairro);
-          liderNome     = pg?.LIDER   ?? '';
-          liderTelefone = pg?.CONTATO ?? '';
-          log(phone, `PG encontrado: ${liderNome} — ${liderTelefone}`);
-        } catch (err) {
-          log(phone, `Aviso: não foi possível buscar PG — ${err.message}`);
+        // Verifica se o visitante já tem cadastro
+        const cadastroExistente = await buscarVisitante(phone, json.nome_completo);
+        if (cadastroExistente) {
+          log(phone, `Visitante já cadastrado: ${cadastroExistente.visitante_nome}`);
+          conversation.markSaved(phone);
+          const aviso = `Oi ${json.nome_completo}! 😊 Você já tem um cadastro aqui com a gente. Seu líder de referência é ${cadastroExistente.lider || 'um de nossos líderes'}. Se precisar de ajuda ou quiser atualizar seus dados, é só me falar! 🌟`;
+          mensagem = aviso;
+        } else {
+          // Busca o PG mais próximo por cidade e bairro
+          let liderNome     = '';
+          let liderTelefone = '';
+          try {
+            const pg  = await buscarPGProximo(json.cidade, json.bairro);
+            liderNome     = pg?.LIDER   ?? '';
+            liderTelefone = pg?.CONTATO ?? '';
+            log(phone, `PG encontrado: ${liderNome} — ${liderTelefone}`);
+          } catch (err) {
+            log(phone, `Aviso: não foi possível buscar PG — ${err.message}`);
+          }
+
+          // Monta o objeto com os nomes das colunas do banco
+          const dbRecord = {
+            visitante_nome:         json.nome_completo,
+            visitante_telefone:     phone,
+            lider:                  liderNome,
+            lider_telefone:         liderTelefone,
+            visitante_idade:        json.idade,
+            vistitante_est_civil:   json.estado_civil,
+            visitante_criancas:     json.tem_criancas,
+            visitante_endereco:     json.endereco,
+            visitante_bairro:       json.bairro,
+            visitante_cidade:       json.cidade,
+            visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
+            visitante_status:       'ATIVO',
+            Data_atu:               new Date().toISOString(),
+          };
+
+          await inserirVisitante(dbRecord);
+          conversation.markSaved(phone);
+          log(phone, `Visitante salvo: ${dbRecord.visitante_nome}`);
+          mensagem = response.replace(DADOS_RE, '').trimStart();
         }
-
-        // Monta o objeto com os nomes das colunas do banco
-        const dbRecord = {
-          visitante_nome:         json.nome_completo,
-          visitante_telefone:     phone,
-          lider:                  liderNome,
-          lider_telefone:         liderTelefone,
-          visitante_idade:        json.idade,
-          vistitante_est_civil:   json.estado_civil,
-          visitante_criancas:     json.tem_criancas,
-          visitante_endereco:     json.endereco,
-          visitante_bairro:       json.bairro,
-          visitante_cidade:       json.cidade,
-          visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
-          visitante_status:       'ATIVO',
-          Data_atu:               new Date().toISOString(),
-        };
-
-        await inserirVisitante(dbRecord);
-        conversation.markSaved(phone);
-        log(phone, `Visitante salvo: ${dbRecord.visitante_nome}`);
       } catch (err) {
         log(phone, `Erro ao salvar no Supabase: ${err.message}`);
+        mensagem = response.replace(DADOS_RE, '').trimStart();
       }
-
-      mensagem = response.replace(DADOS_RE, '').trimStart();
     }
 
     if (mensagem) {
