@@ -1,13 +1,20 @@
 # Inicia o servidor Node.js e o tunel Cloudflare juntos
 Set-Location $PSScriptRoot
 
+# Encerra processos anteriores de cloudflared e node para evitar conflitos
+Get-Process -Name "cloudflared" -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 1
+
 $logFile = "$env:TEMP\cloudflared-tunnel.log"
-if (Test-Path $logFile) { Remove-Item $logFile }
+if (Test-Path $logFile) {
+    Remove-Item $logFile -Force -ErrorAction SilentlyContinue
+}
 
 Write-Host "Iniciando tunel Cloudflare..." -ForegroundColor Cyan
 Start-Process -FilePath "cloudflared" -ArgumentList "tunnel --url http://localhost:3000 --logfile `"$logFile`"" -WindowStyle Hidden
 
-# Aguarda a URL aparecer no log
+# Aguarda a URL aparecer no log (até 40 segundos)
 $url = $null
 $tentativas = 0
 while (-not $url -and $tentativas -lt 20) {
