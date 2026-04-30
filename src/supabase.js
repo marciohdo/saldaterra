@@ -47,4 +47,22 @@ async function buscarPGProximo(cidade, bairro) {
   return mesmoBairro ?? pgs[0]; // fallback: primeiro PG da cidade
 }
 
-module.exports = { inserirVisitante, buscarPGProximo };
+// Verifica se o visitante já tem cadastro pelo telefone ou nome
+async function buscarVisitante(telefone, nome) {
+  const tel  = encodeURIComponent(telefone);
+  const url  = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?visitante_telefone=eq.${tel}&select=id,visitante_nome,visitante_telefone,lider,visitante_status&limit=1`;
+  const res  = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  if (rows.length) return rows[0];
+
+  // Fallback: busca por nome exato
+  const nomeEnc = encodeURIComponent(nome);
+  const url2    = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?visitante_nome=ilike.${nomeEnc}&select=id,visitante_nome,visitante_telefone,lider,visitante_status&limit=1`;
+  const res2    = await fetch(url2, { headers: HEADERS });
+  if (!res2.ok) throw new Error(`Supabase ${res2.status}: ${await res2.text()}`);
+  const rows2   = await res2.json();
+  return rows2[0] ?? null;
+}
+
+module.exports = { inserirVisitante, buscarPGProximo, buscarVisitante };
