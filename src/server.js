@@ -145,6 +145,7 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
 
           // Notifica o líder via WhatsApp usando o tom do PG Visitante Acolhedor
           if (liderTelefone) {
+            const destino = telefoneDestino(liderTelefone);
             const msgLider =
               `Oi líder ${liderNome}, que alegria! 😊 Um novo visitante foi indicado para o seu PG.\n\n` +
               `Nome: ${json.nome_completo}\n` +
@@ -155,9 +156,9 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
               `Endereço: ${json.endereco}, ${json.bairro} - ${json.cidade}\n\n` +
               `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
             try {
-              await sendTyping(liderTelefone);
-              await sendText(liderTelefone, msgLider);
-              log(phone, `Líder ${liderNome} notificado: ${liderTelefone}`);
+              await sendTyping(destino);
+              await sendText(destino, msgLider);
+              log(phone, `Líder ${liderNome} notificado: ${destino}${TEST_MODE ? ' [MODO TESTE]' : ''}`);
             } catch (err) {
               log(phone, `Aviso: não foi possível notificar líder — ${err.message}`);
             }
