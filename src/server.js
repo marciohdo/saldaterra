@@ -88,11 +88,13 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
         const json = JSON.parse(match[1]);
 
         // Busca o PG mais próximo por cidade e bairro
+        let liderNome     = '';
         let liderTelefone = '';
         try {
           const pg = await buscarPGProximo(json.cidade, json.bairro);
+          liderNome     = pg?.LIDER   ?? '';
           liderTelefone = pg?.CONTATO ?? '';
-          log(phone, `PG encontrado: ${pg?.LIDER ?? 'nenhum'} — ${liderTelefone}`);
+          log(phone, `PG encontrado: ${liderNome} — ${liderTelefone}`);
         } catch (err) {
           log(phone, `Aviso: não foi possível buscar PG — ${err.message}`);
         }
@@ -101,6 +103,7 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
         const dbRecord = {
           visitante_nome:         json.nome_completo,
           visitante_telefone:     phone,
+          lider:                  liderNome,
           lider_telefone:         liderTelefone,
           visitante_idade:        json.idade,
           vistitante_est_civil:   json.estado_civil,
