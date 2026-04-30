@@ -53,4 +53,19 @@ async function sendText(number, text) {
   return res.json();
 }
 
-module.exports = { sendText, sendTyping };
+async function markAsRead(remoteJid, messageId) {
+  const url = `${BASE_URL}/chat/markMessageAsRead/${INSTANCE}`;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        readMessages: [{ remoteJid, fromMe: false, id: messageId }],
+      }),
+    });
+  } catch (_) {
+    // não bloqueia o fluxo se falhar
+  }
+}
+
+module.exports = { sendText, sendTyping, markAsRead };
