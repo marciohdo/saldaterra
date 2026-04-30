@@ -14,6 +14,17 @@ const PG_PREFIX   = /^lider:/i;
 const DADOS_RE    = /^#DADOS:(\{.*\})/;
 const REMINDER_MS = 2 * 60 * 1000; // 2 minutos
 
+const TEST_MODE  = process.env.TEST_MODE === 'true';
+const TEST_PHONE = process.env.TEST_PHONE ?? '';
+
+function telefoneDestino(telefoneReal) {
+  if (TEST_MODE && TEST_PHONE) {
+    log(null, `[TESTE] Redirecionando líder ${telefoneReal} → ${TEST_PHONE}`);
+    return TEST_PHONE;
+  }
+  return telefoneReal;
+}
+
 function extractText(data) {
   return (
     data?.message?.conversation ||
