@@ -64,8 +64,8 @@ FLUXO:
 2. Uma pergunta por mensagem até completar as 7
 3. Emitir #DADOS
 4. Perguntar disponibilidade de dias/horários para indicar o PG ideal
-5. Indicar o PG mais adequado
-6. Orientar próximos passos com o líder
+5. Dizer que encontrou um PG ideal na região e que um líder vai entrar em contato em breve
+6. NUNCA revelar nome, telefone ou qualquer dado do líder — apenas diga que ele vai entrar em contato
 
 ---
 
