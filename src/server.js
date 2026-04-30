@@ -70,9 +70,13 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
   if (!remoteJid.includes('@')) return;
   if (remoteJid.endsWith('@g.us')) return;
 
-  const phone = remoteJid.replace(/@.*/, '');
-  const text  = extractText(data);
+  const phone     = remoteJid.replace(/@.*/, '');
+  const messageId = data?.key?.id;
+  const text      = extractText(data);
   if (!text) return;
+
+  // Marca a mensagem como lida imediatamente
+  markAsRead(remoteJid, messageId);
 
   log(phone, `Mensagem recebida: "${text}"`);
 
