@@ -112,4 +112,65 @@ async function buscarVisitante(telefone, nome) {
   return rows2[0] ?? null;
 }
 
-module.exports = { inserirVisitante, buscarPGProximo, buscarVisitante, buscarVisitantePorTelefone };
+// Verifica se o telefone pertence a um líder (LISTA_PGS ou LISTA_ACIONAMENTOS)
+async function verificarLider(telefone) {
+  // Números WhatsApp chegam como "5534xxxxxxxx"; banco armazena sem "55"
+  const telNorm = telefone.startsWith('55') ? telefone.slice(2) : telefone;
+  const t1 = encodeURIComponent(telefone);
+  const t2 = encodeURIComponent(telNorm);
+
+  // Tenta LISTA_PGS
+  const url1 = `${BASE}/rest/v1/LISTA_PGS?or=(CONTATO.eq.${t1},CONTATO.eq.${t2})` +
+    `&select=LIDER,CONTATO,BAIRRO,CIDADE,REDE,PERFIL,"DIA DO PG",HORARIO&limit=1`;
+  const res1 = await fetch(url1, { headers: HEADERS });
+  if (!res1.ok) throw new Error(`Supabase ${res1.status}: ${await res1.text()}`);
+  const rows1 = await res1.json();
+  if (rows1.length) return { nome: rows1[0].LIDER?.trim(), telefone, fonte: 'LISTA_PGS', pg: rows1[0] };
+
+  // Tenta LISTA_ACIONAMENTOS (coluna lider_telefone)
+  const url2 = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?or=(lider_telefone.eq.${t1},lider_telefone.eq.${t2})` +
+    `&select=lider,lider_telefone&limit=1`;
+  const res2 = await fetch(url2, { headers: HEADERS });
+  if (!res2.ok) throw new Error(`Supabase ${res2.status}: ${await res2.text()}`);
+  const rows2 = await res2.json();
+  if (rows2.length) return { nome: rows2[0].lider?.trim(), telefone, fonte: 'LISTA_ACIONAMENTOS', pg: null };
+
+  return null;
+}
+
+// Retorna todos os visitantes atribuídos a este líder
+async function buscarVisitantesDoLider(liderTelefone) {
+  const telNorm = liderTelefone.startsWith('55') ? liderTelefone.slice(2) : liderTelefone;
+  const t1 = encodeURIComponent(liderTelefone);
+  const t2 = encodeURIComponent(telNorm);
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
+    `?or=(lider_telefone.eq.${t1},lider_telefone.eq.${t2})` +
+    `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_ini,visitante_data_fim,visitante_cidade,visitante_bairro` +
+    `&order=id.desc`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// Atualiza campos de um visitante pelo id
+async function atualizarStatusVisitante(id, campos) {
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?id=eq.${id}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { ...HEADERS, Prefer: 'return=representation' },
+    body: JSON.stringify(campos),
+  });
+  const body = await res.text();
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${body}`);
+  return JSON.parse(body);
+}
+
+module.exports = {
+  inserirVisitante,
+  buscarPGProximo,
+  buscarVisitante,
+  buscarVisitantePorTelefone,
+  verificarLider,
+  buscarVisitantesDoLider,
+  atualizarStatusVisitante,
+};
