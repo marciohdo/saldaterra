@@ -259,7 +259,8 @@ async function handleVisitante(phone, text) {
               `Idade: ${json.idade}\n` +
               `Estado civil: ${json.estado_civil}\n` +
               `Crianças: ${json.tem_criancas}\n` +
-              `Endereço: ${json.endereco}, ${json.bairro} - ${json.cidade}\n\n` +
+              `Endereço: ${json.endereco}, ${json.bairro} - ${json.cidade}\n` +
+              `Disponibilidade: ${json.disponibilidade ?? 'não informada'}\n\n` +
               `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
             try {
               await sendTyping(destino);
