@@ -63,18 +63,32 @@ async function getLiderInfo(phone) {
   }
 }
 
+// Contador de lembretes por visitante
+const lembreteCount = new Map();
+const MAX_LEMBRETES = 3;
+
 // Lembrete automático — dispara se visitante ficou 2 min sem responder
 setInterval(async () => {
   const inativos = conversation.getInactive(REMINDER_MS);
   for (const phone of inativos) {
     if (liderCache.get(phone)) continue; // não envia lembrete para líderes
+    const count = lembreteCount.get(phone) ?? 0;
+    if (count > MAX_LEMBRETES) continue; // já encerrou, ignora
     try {
-      const lembrete =
-        'Oi! 😊 Ainda estou aqui esperando por você. Me responde para eu te ajudar a encontrar o seu Pequeno Grupo! 🌟';
+      let mensagem;
+      if (count < MAX_LEMBRETES) {
+        mensagem = 'Oi! 😊 Ainda estou aqui esperando por você. Me responde para eu te ajudar a encontrar o seu Pequeno Grupo! 🌟';
+        lembreteCount.set(phone, count + 1);
+        log(phone, `Lembrete enviado (${count + 1}/${MAX_LEMBRETES})`);
+      } else {
+        mensagem = 'Tudo bem! 😊 Fico feliz em ter tentado te ajudar. Quando quiser encontrar o seu Pequeno Grupo, é só me chamar aqui. Que Deus te abençoe! 🙏';
+        lembreteCount.set(phone, count + 1); // marca como encerrado
+        conversation.clear(phone);
+        log(phone, 'Despedida enviada — conversa encerrada por inatividade');
+      }
       await sendTyping(phone);
-      await sendText(phone, lembrete);
-      conversation.push(phone, 'assistant', lembrete);
-      log(phone, 'Lembrete enviado (2 min sem resposta)');
+      await sendText(phone, mensagem);
+      conversation.push(phone, 'assistant', mensagem);
     } catch (err) {
       log(phone, `Erro ao enviar lembrete: ${err.message}`);
     }
