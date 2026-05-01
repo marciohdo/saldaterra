@@ -231,11 +231,15 @@ async function handleLider(phone, text, liderInfo) {
         // Busca dados completos do visitante para nova busca de PG
         const v = await buscarVisitantePorId(id);
         if (v) {
+          // Consulta LISTA_ACIONAMENTOS para obter TODOS os líderes já tentados
+          const lideresAnteriores = await buscarLideresAnteriores(v.visitante_telefone);
+          log(phone, `Líderes já tentados para ${v.visitante_nome}: ${lideresAnteriores.join(', ')}`);
+
           const novoPG = await buscarPGProximo(
             v.visitante_cidade, v.visitante_bairro,
             v.vistitante_est_civil, v.visitante_criancas,
             v.visitante_idade, v.visitante_endereco,
-            liderInfo.nome  // exclui o líder atual da busca
+            lideresAnteriores  // exclui todos os líderes já tentados
           );
 
           if (novoPG) {
