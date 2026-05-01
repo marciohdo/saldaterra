@@ -48,7 +48,7 @@ async function buscarPGProximo(cidade, bairro, estadoCivil, temCriancas, idade, 
   return null;
 }
 
-async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluirLider = null) {
+async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluirLideres = []) {
   const cidadeEnc  = encodeURIComponent(cidade);
   const perfilEnc  = encodeURIComponent(perfil);
   const url = `${BASE}/rest/v1/LISTA_PGS` +
@@ -81,16 +81,16 @@ async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, t
 
   comDistancia.sort((a, b) => a.distancia_km - b.distancia_km);
 
-  // Filtra o líder atual em JS para comparação confiável (ignora maiúsculas/espaços)
-  const excluirNorm = excluirLider?.trim().toLowerCase();
-  const candidatos  = excluirNorm
-    ? comDistancia.filter(pg => pg.LIDER?.trim().toLowerCase() !== excluirNorm)
+  // Filtra em JS todos os líderes já tentados (ignora maiúsculas/espaços)
+  const excluirNorms = excluirLideres.map(l => l.trim().toLowerCase());
+  const candidatos   = excluirNorms.length
+    ? comDistancia.filter(pg => !excluirNorms.includes(pg.LIDER?.trim().toLowerCase()))
     : comDistancia;
 
   if (!candidatos.length) return null;
 
   const melhor = candidatos[0];
-  console.log(`[supabase] PG selecionado: ${melhor.LIDER} — ${melhor.distancia_km} km${excluirLider ? ` (excluído: ${excluirLider})` : ''}`);
+  console.log(`[supabase] PG selecionado: ${melhor.LIDER} — ${melhor.distancia_km} km${excluirNorms.length ? ` (excluídos: ${excluirLideres.join(', ')})` : ''}`);
   return melhor;
 }
 
