@@ -224,44 +224,37 @@ async function handleLider(phone, text, liderInfo) {
       try {
         const { id, motivo } = JSON.parse(mNaoAtende[1]);
 
-        // Marca registro atual como não atende
-        await atualizarStatusVisitante(id, { visitante_status: 'não atende' });
-        log(phone, `Visitante ID ${id} → não atende (motivo: ${motivo})`);
-
-        // Busca dados completos do visitante para nova busca de PG
+        // 1. Busca dados do visitante antes de alterar o status
         const v = await buscarVisitantePorId(id);
         if (v) {
-          // Consulta LISTA_ACIONAMENTOS para obter TODOS os líderes já tentados
+          // 2. Marca como não atende (mantém o líder atual no registro para o histórico)
+          await atualizarStatusVisitante(id, { visitante_status: 'não atende' });
+          log(phone, `Visitante ID ${id} → não atende (motivo: ${motivo})`);
+
+          // 3. Consulta todos os líderes já tentados para este visitante
           const lideresAnteriores = await buscarLideresAnteriores(v.visitante_telefone);
           log(phone, `Líderes já tentados para ${v.visitante_nome}: ${lideresAnteriores.join(', ')}`);
 
+          // 4. Busca próximo PG mais próximo excluindo todos os líderes anteriores
           const novoPG = await buscarPGProximo(
             v.visitante_cidade, v.visitante_bairro,
             v.vistitante_est_civil, v.visitante_criancas,
             v.visitante_idade, v.visitante_endereco,
-            lideresAnteriores  // exclui todos os líderes já tentados
+            lideresAnteriores
           );
 
           if (novoPG) {
-            // Cria novo registro para o visitante com o novo líder
-            await inserirVisitante({
-              visitante_nome:         v.visitante_nome,
-              visitante_telefone:     v.visitante_telefone,
+            // 5. Atualiza a mesma linha com o novo líder e volta para ATIVO
+            await atualizarStatusVisitante(id, {
               lider:                  novoPG.LIDER,
               lider_telefone:         novoPG.CONTATO,
-              visitante_idade:        v.visitante_idade,
-              vistitante_est_civil:   v.vistitante_est_civil,
-              visitante_criancas:     v.visitante_criancas,
-              visitante_endereco:     v.visitante_endereco,
-              visitante_bairro:       v.visitante_bairro,
-              visitante_cidade:       v.visitante_cidade,
-              visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
               visitante_status:       'ATIVO',
+              visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
               Data_atu:               new Date().toISOString(),
             });
-            log(phone, `Visitante ${v.visitante_nome} redirecionado para novo PG: ${novoPG.LIDER}`);
+            log(phone, `Visitante ${v.visitante_nome} redirecionado → ${novoPG.LIDER}`);
 
-            // Notifica o novo líder
+            // 5. Notifica o novo líder
             const destino = telefoneDestino(novoPG.CONTATO);
             const msgNovoLider =
               `Oi líder ${novoPG.LIDER}, que alegria! 😊 Um visitante foi redirecionado para o seu PG.\n\n` +
