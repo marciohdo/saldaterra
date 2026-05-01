@@ -50,12 +50,11 @@ async function buscarPGProximo(cidade, bairro, estadoCivil, temCriancas, idade, 
 async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluirLider = null) {
   const cidadeEnc  = encodeURIComponent(cidade);
   const perfilEnc  = encodeURIComponent(perfil);
-  let url = `${BASE}/rest/v1/LISTA_PGS` +
+  const url = `${BASE}/rest/v1/LISTA_PGS` +
     `?CIDADE=ilike.${cidadeEnc}` +
     `&PERFIL=eq.${perfilEnc}` +
     `&Capacidade=is.null` +
     `&select=LIDER,CONTATO,BAIRRO,CIDADE,REDE,PERFIL,"DIA DO PG",HORARIO,ENDEREÇO`;
-  if (excluirLider) url += `&LIDER=neq.${encodeURIComponent(excluirLider)}`;
 
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
@@ -64,7 +63,7 @@ async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, t
   console.log(`[supabase] PGs encontrados para perfil=${perfil}: ${pgs.length}`);
   if (!pgs.length) return null;
 
-  // Calcula distância real para cada PG e ordena pelo mais próximo
+  // Calcula distância real via Google Maps para todos os PGs
   const comDistancia = await Promise.all(
     pgs.map(async (pg) => {
       try {
@@ -80,8 +79,17 @@ async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, t
   );
 
   comDistancia.sort((a, b) => a.distancia_km - b.distancia_km);
-  const melhor = comDistancia[0];
-  console.log(`[supabase] PG mais próximo: ${melhor.LIDER} — ${melhor.distancia_km} km`);
+
+  // Filtra o líder atual em JS para comparação confiável (ignora maiúsculas/espaços)
+  const excluirNorm = excluirLider?.trim().toLowerCase();
+  const candidatos  = excluirNorm
+    ? comDistancia.filter(pg => pg.LIDER?.trim().toLowerCase() !== excluirNorm)
+    : comDistancia;
+
+  if (!candidatos.length) return null;
+
+  const melhor = candidatos[0];
+  console.log(`[supabase] PG selecionado: ${melhor.LIDER} — ${melhor.distancia_km} km${excluirLider ? ` (excluído: ${excluirLider})` : ''}`);
   return melhor;
 }
 
