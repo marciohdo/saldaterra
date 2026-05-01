@@ -14,6 +14,7 @@ const {
 const conversation          = require('./conversation');
 const { SYSTEM_PROMPT: LUZ_IA } = require('./agents/luz-ia');
 const { buildSystemPrompt: buildPGPrompt } = require('./agents/pg-visitante');
+const scheduler             = require('./scheduler');
 
 const app = express();
 app.use(express.json());
@@ -322,5 +323,7 @@ app.listen(PORT, () => {
   console.log(`\nServidor rodando na porta ${PORT}`);
   console.log(`Webhook: POST /webhook/5c697459-3a69-4009-b724-43069e591f81`);
   console.log(`Health:  GET  /health`);
-  console.log(`Lembrete: a cada 2 min sem resposta\n`);
+  console.log(`Lembrete visitante: a cada 2 min sem resposta`);
+  console.log(`Lembrete líder: toda segunda-feira\n`);
+  scheduler.iniciar();
 });
