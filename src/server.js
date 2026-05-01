@@ -230,19 +230,20 @@ async function handleVisitante(phone, text) {
           }
 
           const dbRecord = {
-            visitante_nome:         json.nome_completo,
-            visitante_telefone:     phone,
-            lider:                  liderNome,
-            lider_telefone:         liderTelefone,
-            visitante_idade:        json.idade,
-            vistitante_est_civil:   json.estado_civil,
-            visitante_criancas:     json.tem_criancas,
-            visitante_endereco:     json.endereco,
-            visitante_bairro:       json.bairro,
-            visitante_cidade:       json.cidade,
-            visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
-            visitante_status:       'ATIVO',
-            Data_atu:               new Date().toISOString(),
+            visitante_nome:           json.nome_completo,
+            visitante_telefone:       phone,
+            lider:                    liderNome,
+            lider_telefone:           liderTelefone,
+            visitante_idade:          json.idade,
+            vistitante_est_civil:     json.estado_civil,
+            visitante_criancas:       json.tem_criancas,
+            visitante_endereco:       json.endereco,
+            visitante_bairro:         json.bairro,
+            visitante_cidade:         json.cidade,
+            visitante_disponibilidade: json.disponibilidade ?? '',
+            visitante_data_contato:   new Date().toLocaleDateString('pt-BR'),
+            visitante_status:         'ATIVO',
+            Data_atu:                 new Date().toISOString(),
           };
 
           await inserirVisitante(dbRecord);
