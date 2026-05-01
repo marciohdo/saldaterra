@@ -215,6 +215,7 @@ module.exports = {
   buscarVisitante,
   buscarVisitantePorId,
   buscarVisitantePorTelefone,
+  buscarLideresAnteriores,
   verificarLider,
   buscarVisitantesDoLider,
   buscarVisitantesSemContato,

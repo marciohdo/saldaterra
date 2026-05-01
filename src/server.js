@@ -8,6 +8,7 @@ const {
   buscarVisitante,
   buscarVisitantePorId,
   buscarVisitantePorTelefone,
+  buscarLideresAnteriores,
   verificarLider,
   buscarVisitantesDoLider,
   atualizarStatusVisitante,
