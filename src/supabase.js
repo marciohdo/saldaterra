@@ -154,6 +154,19 @@ async function buscarVisitantesDoLider(liderTelefone) {
   return res.json();
 }
 
+// Retorna visitantes com status ATIVO (sem contato do líder) agrupados por líder
+async function buscarVisitantesSemContato() {
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
+    `?visitante_status=eq.ATIVO` +
+    `&lider_telefone=not.is.null` +
+    `&lider_telefone=neq.` +
+    `&select=id,visitante_nome,visitante_telefone,lider,lider_telefone,visitante_data_contato` +
+    `&order=lider_telefone.asc`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 // Atualiza campos de um visitante pelo id
 async function atualizarStatusVisitante(id, campos) {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?id=eq.${id}`;
