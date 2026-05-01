@@ -23,8 +23,11 @@ const CONVIDAR_RE = /^#CONVIDAR:(\{.*\})/m;
 const PARTICIPOU_RE = /^#PARTICIPOU:(\{.*\})/m;
 const REMINDER_MS = 2 * 60 * 1000;
 
-const TEST_MODE  = process.env.TEST_MODE === 'true';
-const TEST_PHONE = process.env.TEST_PHONE ?? '';
+const TEST_MODE               = process.env.TEST_MODE === 'true';
+const TEST_PHONE              = process.env.TEST_PHONE ?? '';
+const TEST_LEADER_PHONE       = process.env.TEST_LEADER_PHONE ?? '';
+const TEST_LEADER_NOME        = process.env.TEST_LEADER_NOME ?? 'Líder Teste';
+const TEST_LEADER_LOOKUP_PHONE = process.env.TEST_LEADER_LOOKUP_PHONE ?? '';
 
 // Cache de líderes verificados: phone → {nome, ...} | false
 const liderCache = new Map();
@@ -53,6 +56,15 @@ function log(phone, msg) {
 
 async function getLiderInfo(phone) {
   if (liderCache.has(phone)) return liderCache.get(phone);
+
+  // Em TEST_MODE, injeta o líder de teste sem consultar o banco
+  if (TEST_MODE && TEST_LEADER_PHONE && phone === TEST_LEADER_PHONE) {
+    const info = { nome: TEST_LEADER_NOME, telefone: phone, fonte: 'TEST_MODE', pg: null };
+    liderCache.set(phone, info);
+    log(phone, `[TESTE] Líder de teste identificado: ${TEST_LEADER_NOME}`);
+    return info;
+  }
+
   try {
     const info = await verificarLider(phone);
     liderCache.set(phone, info ?? false);
@@ -162,8 +174,9 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
 // ── Handler: líder ────────────────────────────────────────────────────────────
 async function handleLider(phone, text, liderInfo) {
   try {
-    const visitantes   = await buscarVisitantesDoLider(phone);
-    log(phone, `Visitantes pendentes encontrados: ${visitantes.length}`);
+    const lookupPhone  = TEST_MODE && TEST_LEADER_LOOKUP_PHONE ? TEST_LEADER_LOOKUP_PHONE : phone;
+    const visitantes   = await buscarVisitantesDoLider(lookupPhone);
+    log(phone, `Visitantes pendentes encontrados: ${visitantes.length}${TEST_MODE && TEST_LEADER_LOOKUP_PHONE ? ` (lookup: ${lookupPhone})` : ''}`);
     const systemPrompt = buildPGPrompt(liderInfo.nome, visitantes);
 
     const response = await reply(phone, text, systemPrompt);
