@@ -6,6 +6,7 @@ const {
   inserirVisitante,
   buscarPGProximo,
   buscarVisitante,
+  buscarVisitantePorId,
   buscarVisitantePorTelefone,
   verificarLider,
   buscarVisitantesDoLider,
@@ -19,9 +20,10 @@ const scheduler             = require('./scheduler');
 const app = express();
 app.use(express.json());
 
-const DADOS_RE    = /^#DADOS:(\{.*\})/;
-const CONVIDAR_RE = /^#CONVIDAR:(\{.*\})/m;
+const DADOS_RE      = /^#DADOS:(\{.*\})/;
+const CONVIDAR_RE   = /^#CONVIDAR:(\{.*\})/m;
 const PARTICIPOU_RE = /^#PARTICIPOU:(\{.*\})/m;
+const NAO_ATENDE_RE = /^#NAO_ATENDE:(\{.*\})/m;
 const REMINDER_MS = 2 * 60 * 1000;
 
 const TEST_MODE               = process.env.TEST_MODE === 'true';
