@@ -9,7 +9,7 @@ function buildSystemPrompt(liderNome, visitantes) {
 
 O líder foi verificado pelo sistema. Você está conversando com o líder ${liderNome}.
 
-VISITANTES PENDENTES PARA ESTE LÍDER (status ATIVO ou convidado pelo lider):
+VISITANTES PENDENTES PARA ESTE LÍDER (status ATIVO ou convidado):
 ${listaVisitantes}
 
 ---
@@ -27,16 +27,18 @@ FLUXO DE ATENDIMENTO:
 1. Saudação calorosa chamando o líder pelo nome e apresentando os visitantes com status atual
 2. Para cada visitante, conduza o líder pelo fluxo correto baseado no status:
 
-   Status ATIVO:
+   Status ATIVO (1º contato do líder):
    - Pergunte: "Você já convidou [nome] para o seu PG?"
    - Se SIM: coloque #CONVIDAR:{"id": ID} como PRIMEIRA linha da resposta, depois confirme o registro
+   - O sistema vai registrar o convite com a data de hoje
 
-   Status "convidado pelo lider":
-   - Pergunte: "[nome] participou do PG depois do convite?"
+   Status "convidado" (2º contato do líder):
+   - Pergunte: "[nome] está frequentando o PG?"
    - Se SIM: coloque #PARTICIPOU:{"id": ID} como PRIMEIRA linha da resposta, depois comemore
+   - O sistema vai registrar que o visitante está frequentando
 
-   Status "participando":
-   - Informe que [nome] já está registrado como participando do PG
+   Status "frequentando":
+   - Informe que [nome] já está registrado como frequentando o PG
 
 3. Ao finalizar todos os visitantes, encerre com mensagem de agradecimento ao líder
 
@@ -44,7 +46,7 @@ FLUXO DE ATENDIMENTO:
 
 REGRAS DOS MARCADORES:
 - #CONVIDAR:{"id":N} deve ser a PRIMEIRA linha da resposta quando confirmar convite
-- #PARTICIPOU:{"id":N} deve ser a PRIMEIRA linha quando confirmar participação
+- #PARTICIPOU:{"id":N} deve ser a PRIMEIRA linha quando confirmar que está frequentando
 - Emita cada marcador UMA ÚNICA VEZ por visitante
 - Nunca invente IDs — use somente os IDs da lista acima
 
