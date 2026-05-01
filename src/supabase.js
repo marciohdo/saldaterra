@@ -32,17 +32,18 @@ async function inserirVisitante(dados) {
 
 // Busca o PG mais próximo usando perfil do visitante + distância real via Google Maps
 // Replica a lógica do fluxo n8n
-async function buscarPGProximo(cidade, bairro, estadoCivil, temCriancas, idade, endereco, excluirLider = null) {
+async function buscarPGProximo(cidade, bairro, estadoCivil, temCriancas, idade, endereco, excluirLideres = []) {
   const perfil = determinarPerfil(estadoCivil, temCriancas, idade);
-  console.log(`[supabase] buscarPGProximo — perfil=${perfil} cidade=${cidade}${excluirLider ? ` excluindo=${excluirLider}` : ''}`);
+  const excluidos = excluirLideres.filter(Boolean);
+  console.log(`[supabase] buscarPGProximo — perfil=${perfil} cidade=${cidade}${excluidos.length ? ` excluindo=${excluidos.join(', ')}` : ''}`);
 
-  const pg = await _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluirLider);
+  const pg = await _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluidos);
   if (pg) return pg;
 
   // Fallback: tenta com perfil Familia
   if (perfil !== 'Familia') {
     console.log('[supabase] Fallback para perfil Familia');
-    return _buscarPorPerfil('Familia', cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluirLider);
+    return _buscarPorPerfil('Familia', cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluidos);
   }
   return null;
 }
