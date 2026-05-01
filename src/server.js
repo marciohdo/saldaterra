@@ -217,6 +217,70 @@ async function handleLider(phone, text, liderInfo) {
       mensagem = mensagem.replace(PARTICIPOU_RE, '').trimStart();
     }
 
+    // Processa #NAO_ATENDE — redireciona visitante para novo PG
+    const mNaoAtende = response.match(NAO_ATENDE_RE);
+    if (mNaoAtende) {
+      try {
+        const { id, motivo } = JSON.parse(mNaoAtende[1]);
+
+        // Marca registro atual como não atende
+        await atualizarStatusVisitante(id, { visitante_status: 'não atende' });
+        log(phone, `Visitante ID ${id} → não atende (motivo: ${motivo})`);
+
+        // Busca dados completos do visitante para nova busca de PG
+        const v = await buscarVisitantePorId(id);
+        if (v) {
+          const novoPG = await buscarPGProximo(
+            v.visitante_cidade, v.visitante_bairro,
+            v.vistitante_est_civil, v.visitante_criancas,
+            v.visitante_idade, v.visitante_endereco,
+            liderInfo.nome  // exclui o líder atual da busca
+          );
+
+          if (novoPG) {
+            // Cria novo registro para o visitante com o novo líder
+            await inserirVisitante({
+              visitante_nome:         v.visitante_nome,
+              visitante_telefone:     v.visitante_telefone,
+              lider:                  novoPG.LIDER,
+              lider_telefone:         novoPG.CONTATO,
+              visitante_idade:        v.visitante_idade,
+              vistitante_est_civil:   v.vistitante_est_civil,
+              visitante_criancas:     v.visitante_criancas,
+              visitante_endereco:     v.visitante_endereco,
+              visitante_bairro:       v.visitante_bairro,
+              visitante_cidade:       v.visitante_cidade,
+              visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
+              visitante_status:       'ATIVO',
+              Data_atu:               new Date().toISOString(),
+            });
+            log(phone, `Visitante ${v.visitante_nome} redirecionado para novo PG: ${novoPG.LIDER}`);
+
+            // Notifica o novo líder
+            const destino = telefoneDestino(novoPG.CONTATO);
+            const msgNovoLider =
+              `Oi líder ${novoPG.LIDER}, que alegria! 😊 Um visitante foi redirecionado para o seu PG.\n\n` +
+              `Nome: ${v.visitante_nome}\n` +
+              `Telefone: ${v.visitante_telefone}\n` +
+              `Idade: ${v.visitante_idade}\n` +
+              `Estado civil: ${v.vistitante_est_civil}\n` +
+              `Crianças: ${v.visitante_criancas}\n` +
+              `Endereço: ${v.visitante_endereco}, ${v.visitante_bairro} - ${v.visitante_cidade}\n\n` +
+              `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
+            await sendTyping(destino);
+            await sendText(destino, msgNovoLider);
+            log(phone, `Novo líder ${novoPG.LIDER} notificado: ${destino}`);
+          } else {
+            log(phone, `Nenhum PG disponível para redirecionar visitante ID ${id}`);
+          }
+        }
+      } catch (err) {
+        log(phone, `Erro ao processar #NAO_ATENDE: ${err.message}`);
+        console.error(err);
+      }
+      mensagem = mensagem.replace(NAO_ATENDE_RE, '').trimStart();
+    }
+
     if (mensagem) {
       await sendTyping(phone);
       await sendText(phone, mensagem);
