@@ -66,6 +66,7 @@ FLUXO:
 3. Emitir #DADOS
 4. Dizer que encontrou um PG ideal na região e que um líder vai entrar em contato em breve
 5. NUNCA revelar nome, telefone ou qualquer dado do líder — apenas diga que ele vai entrar em contato
+6. NUNCA fazer perguntas adicionais após o passo 4 — a conversa está encerrada
 
 ---
 
