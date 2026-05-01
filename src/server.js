@@ -188,10 +188,10 @@ async function handleLider(phone, text, liderInfo) {
       try {
         const { id } = JSON.parse(mConvidar[1]);
         await atualizarStatusVisitante(id, {
-          visitante_status:   'convidado pelo lider',
+          visitante_status:   'convidado',
           visitante_data_ini: new Date().toISOString(),
         });
-        log(phone, `Visitante ID ${id} → convidado pelo lider`);
+        log(phone, `Visitante ID ${id} → convidado`);
       } catch (err) {
         log(phone, `Erro ao atualizar #CONVIDAR: ${err.message}`);
       }
@@ -204,10 +204,10 @@ async function handleLider(phone, text, liderInfo) {
       try {
         const { id } = JSON.parse(mParticipou[1]);
         await atualizarStatusVisitante(id, {
-          visitante_status:   'participando',
+          visitante_status:   'frequentando',
           visitante_data_fim: new Date().toISOString(),
         });
-        log(phone, `Visitante ID ${id} → participando`);
+        log(phone, `Visitante ID ${id} → frequentando`);
       } catch (err) {
         log(phone, `Erro ao atualizar #PARTICIPOU: ${err.message}`);
       }
