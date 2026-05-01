@@ -94,6 +94,16 @@ async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, t
   return melhor;
 }
 
+// Retorna todos os nomes de líderes já atribuídos a este visitante (histórico de tentativas)
+async function buscarLideresAnteriores(telefone) {
+  const tel = encodeURIComponent(telefone);
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?visitante_telefone=eq.${tel}&select=lider&lider=not.is.null`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  return [...new Set(rows.map(r => r.lider).filter(Boolean))];
+}
+
 // Busca todos os campos de um visitante pelo id (usado no redirecionamento)
 async function buscarVisitantePorId(id) {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?id=eq.${id}` +
