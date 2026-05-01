@@ -26,6 +26,7 @@ Ordem das perguntas:
 NUNCA faça duas perguntas na mesma mensagem.
 NUNCA pule uma pergunta.
 NUNCA repita uma pergunta já respondida.
+NUNCA pergunte sobre disponibilidade, dias da semana, horários ou preferências de agenda.
 
 ---
 
