@@ -187,5 +187,6 @@ module.exports = {
   buscarVisitantePorTelefone,
   verificarLider,
   buscarVisitantesDoLider,
+  buscarVisitantesSemContato,
   atualizarStatusVisitante,
 };
