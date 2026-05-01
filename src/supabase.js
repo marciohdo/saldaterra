@@ -32,29 +32,30 @@ async function inserirVisitante(dados) {
 
 // Busca o PG mais próximo usando perfil do visitante + distância real via Google Maps
 // Replica a lógica do fluxo n8n
-async function buscarPGProximo(cidade, bairro, estadoCivil, temCriancas, idade, endereco) {
+async function buscarPGProximo(cidade, bairro, estadoCivil, temCriancas, idade, endereco, excluirLider = null) {
   const perfil = determinarPerfil(estadoCivil, temCriancas, idade);
-  console.log(`[supabase] buscarPGProximo — perfil=${perfil} cidade=${cidade}`);
+  console.log(`[supabase] buscarPGProximo — perfil=${perfil} cidade=${cidade}${excluirLider ? ` excluindo=${excluirLider}` : ''}`);
 
-  const pg = await _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade);
+  const pg = await _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluirLider);
   if (pg) return pg;
 
   // Fallback: tenta com perfil Familia
   if (perfil !== 'Familia') {
     console.log('[supabase] Fallback para perfil Familia');
-    return _buscarPorPerfil('Familia', cidade, bairro, endereco, estadoCivil, temCriancas, idade);
+    return _buscarPorPerfil('Familia', cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluirLider);
   }
   return null;
 }
 
-async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade) {
+async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluirLider = null) {
   const cidadeEnc  = encodeURIComponent(cidade);
   const perfilEnc  = encodeURIComponent(perfil);
-  const url = `${BASE}/rest/v1/LISTA_PGS` +
+  let url = `${BASE}/rest/v1/LISTA_PGS` +
     `?CIDADE=ilike.${cidadeEnc}` +
     `&PERFIL=eq.${perfilEnc}` +
     `&Capacidade=is.null` +
     `&select=LIDER,CONTATO,BAIRRO,CIDADE,REDE,PERFIL,"DIA DO PG",HORARIO,ENDEREÇO`;
+  if (excluirLider) url += `&LIDER=neq.${encodeURIComponent(excluirLider)}`;
 
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
@@ -82,6 +83,16 @@ async function _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, t
   const melhor = comDistancia[0];
   console.log(`[supabase] PG mais próximo: ${melhor.LIDER} — ${melhor.distancia_km} km`);
   return melhor;
+}
+
+// Busca todos os campos de um visitante pelo id (usado no redirecionamento)
+async function buscarVisitantePorId(id) {
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?id=eq.${id}` +
+    `&select=id,visitante_nome,visitante_telefone,visitante_idade,vistitante_est_civil,visitante_criancas,visitante_endereco,visitante_bairro,visitante_cidade,lider,lider_telefone&limit=1`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  return rows[0] ?? null;
 }
 
 // Busca cadastro apenas pelo telefone (verificação rápida na chegada)
@@ -143,10 +154,9 @@ async function buscarVisitantesDoLider(liderTelefone) {
   const telNorm = liderTelefone.startsWith('55') ? liderTelefone.slice(2) : liderTelefone;
   const t1 = encodeURIComponent(liderTelefone);
   const t2 = encodeURIComponent(telNorm);
-  const statusFinal = encodeURIComponent('frequentando');
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
     `?or=(lider_telefone.eq.${t1},lider_telefone.eq.${t2})` +
-    `&visitante_status=neq.${statusFinal}` +
+    `&visitante_status=not.in.(frequentando,não atende)` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_ini,visitante_data_fim,visitante_cidade,visitante_bairro` +
     `&order=id.desc`;
   const res = await fetch(url, { headers: HEADERS });
