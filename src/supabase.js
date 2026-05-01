@@ -194,6 +194,7 @@ module.exports = {
   inserirVisitante,
   buscarPGProximo,
   buscarVisitante,
+  buscarVisitantePorId,
   buscarVisitantePorTelefone,
   verificarLider,
   buscarVisitantesDoLider,
