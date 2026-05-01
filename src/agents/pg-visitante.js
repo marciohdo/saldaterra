@@ -9,7 +9,7 @@ function buildSystemPrompt(liderNome, visitantes) {
 
 O líder foi verificado pelo sistema. Você está conversando com o líder ${liderNome}.
 
-VISITANTES INDICADOS PARA ESTE LÍDER:
+VISITANTES PENDENTES PARA ESTE LÍDER (status ATIVO ou convidado pelo lider):
 ${listaVisitantes}
 
 ---

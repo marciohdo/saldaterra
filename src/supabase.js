@@ -138,13 +138,15 @@ async function verificarLider(telefone) {
   return null;
 }
 
-// Retorna todos os visitantes atribuídos a este líder
+// Retorna visitantes pendentes (ATIVO ou convidado pelo lider) atribuídos a este líder
 async function buscarVisitantesDoLider(liderTelefone) {
   const telNorm = liderTelefone.startsWith('55') ? liderTelefone.slice(2) : liderTelefone;
   const t1 = encodeURIComponent(liderTelefone);
   const t2 = encodeURIComponent(telNorm);
+  const statusPendente = encodeURIComponent('participando');
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
     `?or=(lider_telefone.eq.${t1},lider_telefone.eq.${t2})` +
+    `&visitante_status=neq.${statusPendente}` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_ini,visitante_data_fim,visitante_cidade,visitante_bairro` +
     `&order=id.desc`;
   const res = await fetch(url, { headers: HEADERS });
