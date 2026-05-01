@@ -149,6 +149,7 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
 async function handleLider(phone, text, liderInfo) {
   try {
     const visitantes   = await buscarVisitantesDoLider(phone);
+    log(phone, `Visitantes pendentes encontrados: ${visitantes.length}`);
     const systemPrompt = buildPGPrompt(liderInfo.nome, visitantes);
 
     const response = await reply(phone, text, systemPrompt);
