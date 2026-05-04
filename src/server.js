@@ -254,8 +254,8 @@ async function handleLider(phone, text, liderInfo) {
             });
             log(phone, `Visitante ${v.visitante_nome} redirecionado → ${novoPG.LIDER}`);
 
-            // 5. Notifica o novo líder
-            const destino = telefoneDestino(novoPG.CONTATO);
+            // Notifica o novo líder
+            const destinoNovo = telefoneDestino(novoPG.CONTATO);
             const msgNovoLider =
               `Oi líder ${novoPG.LIDER}, que alegria! 😊 Um visitante foi redirecionado para o seu PG.\n\n` +
               `Nome: ${v.visitante_nome}\n` +
@@ -265,11 +265,18 @@ async function handleLider(phone, text, liderInfo) {
               `Crianças: ${v.visitante_criancas}\n` +
               `Endereço: ${v.visitante_endereco}, ${v.visitante_bairro} - ${v.visitante_cidade}\n\n` +
               `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
-            await sendTyping(destino);
-            await sendText(destino, msgNovoLider);
-            log(phone, `Novo líder ${novoPG.LIDER} notificado: ${destino}`);
+            await sendTyping(destinoNovo);
+            await sendText(destinoNovo, msgNovoLider);
+            log(phone, `Novo líder ${novoPG.LIDER} notificado: ${destinoNovo}`);
+
+            // Avisa o líder antigo que um novo PG foi encontrado
+            const msgLiderAntigo =
+              `Tudo certo, líder ${liderInfo.nome}! 😊 Encontrei um novo PG para ${v.visitante_nome}.\n` +
+              `Ele(a) foi encaminhado(a) para outro líder que já foi avisado. Muito obrigado pelo retorno! 🙏`;
+            mensagem = msgLiderAntigo;
           } else {
             log(phone, `Nenhum PG disponível para redirecionar visitante ID ${id}`);
+            mensagem = `Líder ${liderInfo.nome}, tentei buscar outro PG para ${v.visitante_nome} mas não encontrei nenhum disponível no momento. Vou verificar e retorno em breve! 🙏`;
           }
         }
       } catch (err) {
