@@ -258,15 +258,24 @@ async function handleLider(phone, text, liderInfo) {
           }
 
           if (novoPG) {
-            // 5. Atualiza a mesma linha com o novo líder e volta para ATIVO
-            await atualizarStatusVisitante(id, {
+            // 5. Cria nova linha para o novo líder (linha antiga fica como histórico com 'não atende')
+            const novoRegistro = await inserirVisitante({
+              visitante_nome:         v.visitante_nome,
+              visitante_telefone:     v.visitante_telefone,
+              visitante_idade:        v.visitante_idade,
+              vistitante_est_civil:   v.vistitante_est_civil,
+              visitante_criancas:     v.visitante_criancas,
+              visitante_endereco:     v.visitante_endereco,
+              visitante_bairro:       v.visitante_bairro,
+              visitante_cidade:       v.visitante_cidade,
               lider:                  novoPG.LIDER,
               lider_telefone:         novoPG.CONTATO,
               visitante_status:       'ATIVO',
               visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
               Data_atu:               new Date().toISOString(),
             });
-            log(phone, `Visitante ${v.visitante_nome} redirecionado → ${novoPG.LIDER}`);
+            const novoId = novoRegistro?.[0]?.id ?? null;
+            log(phone, `Nova linha criada para ${v.visitante_nome} → ${novoPG.LIDER}${novoId ? ` (id=${novoId})` : ''}`);
 
             // Notifica o novo líder
             const destinoNovo = telefoneDestino(novoPG.CONTATO);
@@ -283,10 +292,10 @@ async function handleLider(phone, text, liderInfo) {
               await sendTyping(destinoNovo);
               await sendText(destinoNovo, msgNovoLider);
               log(phone, `Novo líder ${novoPG.LIDER} notificado: ${destinoNovo}`);
-              await atualizarStatusVisitante(id, { lider_avisado: 'sim' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
+              if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'sim' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
             } catch (err) {
               log(phone, `Erro ao notificar novo líder ${novoPG.LIDER}: ${err.message}`);
-              await atualizarStatusVisitante(id, { lider_avisado: 'não' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
+              if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'não' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
             }
 
             // Avisa o líder antigo que um novo PG foi encontrado
