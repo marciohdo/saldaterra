@@ -3,7 +3,6 @@ const { buscarVisitantesSemContato } = require('./supabase');
 const { sendTyping, sendText }       = require('./evolution-api');
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // verifica a cada 1 hora
-const DIAS_DE_ENVIO     = new Set([1, 4]); // 1=segunda, 4=quinta
 
 let ultimoEnvio = null; // data do último disparo — garante 1 envio por dia
 
@@ -12,11 +11,6 @@ function hoje() {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric', month: '2-digit', day: '2-digit',
   });
-}
-
-function isDiaDeEnvio() {
-  const agora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  return DIAS_DE_ENVIO.has(agora.getDay());
 }
 
 function log(msg) {
@@ -55,7 +49,7 @@ async function dispararLembretes() {
       const msg =
         `Oi líder ${lider.nome}! 😊 Passando para lembrar que você tem visitante(s) aguardando o seu contato:\n\n` +
         `${lista}\n\n` +
-        `Que tal dar uma ligadinha ou mandar uma mensagem para eles essa semana? Deus abençoe! 🙏`;
+        `Que tal dar uma ligadinha ou mandar uma mensagem para eles hoje? Deus abençoe! 🙏`;
 
       try {
         await sendTyping(lider.telefone);
@@ -71,10 +65,9 @@ async function dispararLembretes() {
 }
 
 function iniciar() {
-  log('Agendador iniciado — lembretes toda segunda-feira e quinta-feira.');
+  log('Agendador iniciado — lembretes diários para líderes com visitantes pendentes.');
 
   setInterval(async () => {
-    if (!isDiaDeEnvio()) return;
     const dataHoje = hoje();
     if (ultimoEnvio === dataHoje) return; // já enviou hoje
     ultimoEnvio = dataHoje;
