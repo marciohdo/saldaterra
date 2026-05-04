@@ -3,9 +3,9 @@ const { buscarVisitantesSemContato } = require('./supabase');
 const { sendTyping, sendText }       = require('./evolution-api');
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // verifica a cada 1 hora
-const SEGUNDA_FEIRA     = 1;               // getDay() → 0=dom, 1=seg, ...
+const DIAS_DE_ENVIO     = new Set([1, 4]); // 1=segunda, 4=quinta
 
-let ultimoEnvio = null; // data (YYYY-MM-DD) do último disparo
+let ultimoEnvio = null; // data do último disparo — garante 1 envio por dia
 
 function hoje() {
   return new Date().toLocaleDateString('pt-BR', {
@@ -14,9 +14,9 @@ function hoje() {
   });
 }
 
-function isSegundaFeira() {
+function isDiaDeEnvio() {
   const agora = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  return agora.getDay() === SEGUNDA_FEIRA;
+  return DIAS_DE_ENVIO.has(agora.getDay());
 }
 
 function log(msg) {
