@@ -380,9 +380,10 @@ async function handleVisitante(phone, text) {
             Data_atu:               new Date().toISOString(),
           };
 
-          await inserirVisitante(dbRecord);
+          const saved   = await inserirVisitante(dbRecord);
+          const savedId = saved?.[0]?.id ?? null;
           conversation.markSaved(phone);
-          log(phone, `Visitante salvo: ${dbRecord.visitante_nome}`);
+          log(phone, `Visitante salvo: ${dbRecord.visitante_nome}${savedId ? ` (id=${savedId})` : ''}`);
 
           if (liderTelefone) {
             const destino = telefoneDestino(liderTelefone);
@@ -399,8 +400,10 @@ async function handleVisitante(phone, text) {
               await sendTyping(destino);
               await sendText(destino, msgLider);
               log(phone, `Líder ${liderNome} notificado: ${destino}${TEST_MODE ? ' [MODO TESTE]' : ''}`);
+              if (savedId) await atualizarStatusVisitante(savedId, { lider_avisado: 'sim' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
             } catch (err) {
               log(phone, `Aviso: não foi possível notificar líder — ${err.message}`);
+              if (savedId) await atualizarStatusVisitante(savedId, { lider_avisado: 'não' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
             }
           }
 
