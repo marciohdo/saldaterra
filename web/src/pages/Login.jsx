@@ -22,9 +22,9 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-700 to-blue-900 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-blue-800">Igreja Sal da Terra</h1>
-          <p className="text-gray-500 text-sm mt-1">Gestão de Pequenos Grupos</p>
+        <div className="flex flex-col items-center mb-8">
+          <img src="/logo.png" alt="Sal da Terra" className="h-16 object-contain mb-3" />
+          <p className="text-gray-500 text-sm">Gestão de Pequenos Grupos</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
