@@ -71,10 +71,10 @@ async function dispararLembretes() {
 }
 
 function iniciar() {
-  log('Agendador iniciado — lembretes toda segunda-feira.');
+  log('Agendador iniciado — lembretes toda segunda-feira e quinta-feira.');
 
   setInterval(async () => {
-    if (!isSegundaFeira()) return;
+    if (!isDiaDeEnvio()) return;
     const dataHoje = hoje();
     if (ultimoEnvio === dataHoje) return; // já enviou hoje
     ultimoEnvio = dataHoje;
