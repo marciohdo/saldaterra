@@ -117,7 +117,7 @@ async function buscarVisitantePorId(id) {
 // Busca cadastro apenas pelo telefone (verificação rápida na chegada)
 async function buscarVisitantePorTelefone(telefone) {
   const tel = encodeURIComponent(telefone);
-  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?visitante_telefone=eq.${tel}&select=id,visitante_nome,visitante_telefone,lider,lider_telefone,visitante_status&limit=1`;
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?visitante_telefone=eq.${tel}&select=id,visitante_nome,visitante_telefone,lider,lider_telefone,visitante_status&order=id.desc&limit=1`;
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
   const rows = await res.json();
@@ -127,7 +127,7 @@ async function buscarVisitantePorTelefone(telefone) {
 // Verifica se o visitante já tem cadastro pelo telefone ou nome
 async function buscarVisitante(telefone, nome) {
   const tel  = encodeURIComponent(telefone);
-  const url  = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?visitante_telefone=eq.${tel}&select=id,visitante_nome,visitante_telefone,lider,visitante_status&limit=1`;
+  const url  = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?visitante_telefone=eq.${tel}&select=id,visitante_nome,visitante_telefone,lider,visitante_status&order=id.desc&limit=1`;
   const res  = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
   const rows = await res.json();
