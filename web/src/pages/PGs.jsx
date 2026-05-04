@@ -133,9 +133,12 @@ export default function PGs() {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header */}
       <header className="bg-blue-800 text-white px-6 py-4 flex items-center justify-between shadow-md flex-shrink-0">
-        <div>
-          <h1 className="text-lg font-bold leading-tight">Igreja Sal da Terra</h1>
-          <p className="text-blue-200 text-xs mt-0.5">Cadastro de Pequenos Grupos</p>
+        <div className="flex items-center gap-3">
+          <img src="/icone.png" alt="Sal da Terra" className="h-10 object-contain" />
+          <div>
+            <h1 className="text-lg font-bold leading-tight">Igreja Sal da Terra</h1>
+            <p className="text-blue-200 text-xs mt-0.5">Cadastro de Pequenos Grupos</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <input
