@@ -279,9 +279,15 @@ async function handleLider(phone, text, liderInfo) {
               `Crianças: ${v.visitante_criancas}\n` +
               `Endereço: ${v.visitante_endereco}, ${v.visitante_bairro} - ${v.visitante_cidade}\n\n` +
               `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
-            await sendTyping(destinoNovo);
-            await sendText(destinoNovo, msgNovoLider);
-            log(phone, `Novo líder ${novoPG.LIDER} notificado: ${destinoNovo}`);
+            try {
+              await sendTyping(destinoNovo);
+              await sendText(destinoNovo, msgNovoLider);
+              log(phone, `Novo líder ${novoPG.LIDER} notificado: ${destinoNovo}`);
+              await atualizarStatusVisitante(id, { lider_avisado: 'sim' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
+            } catch (err) {
+              log(phone, `Erro ao notificar novo líder ${novoPG.LIDER}: ${err.message}`);
+              await atualizarStatusVisitante(id, { lider_avisado: 'não' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
+            }
 
             // Avisa o líder antigo que um novo PG foi encontrado
             mensagem =
