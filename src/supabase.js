@@ -183,6 +183,49 @@ async function buscarVisitantesDoLider(liderTelefone) {
   return res.json();
 }
 
+// Busca o PG mais próximo ignorando perfil — usado na 3ª tentativa em diante
+async function buscarPGPorProximidade(cidade, bairro, endereco, excluirLideres = []) {
+  const cidadeEnc  = encodeURIComponent(cidade);
+  const excluidos  = excluirLideres.filter(Boolean);
+  const url = `${BASE}/rest/v1/LISTA_PGS` +
+    `?CIDADE=ilike.${cidadeEnc}` +
+    `&Capacidade=is.null` +
+    `&select=LIDER,CONTATO,BAIRRO,CIDADE,REDE,PERFIL,"DIA DO PG",HORARIO,ENDEREÇO`;
+
+  console.log(`[supabase] buscarPGPorProximidade — cidade=${cidade} excluindo=${excluidos.join(', ')}`);
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+
+  const pgs = await res.json();
+  if (!pgs.length) return null;
+
+  const comDistancia = await Promise.all(
+    pgs.map(async (pg) => {
+      try {
+        const km = await distanciaVisitantePG(
+          endereco, bairro, cidade,
+          pg['ENDEREÇO'] ?? '', pg.BAIRRO ?? '', pg.CIDADE ?? ''
+        );
+        return { ...pg, distancia_km: km ?? Infinity };
+      } catch {
+        return { ...pg, distancia_km: Infinity };
+      }
+    })
+  );
+
+  comDistancia.sort((a, b) => a.distancia_km - b.distancia_km);
+
+  const excluirNorms = excluidos.map(l => l.trim().toLowerCase());
+  const candidatos   = excluirNorms.length
+    ? comDistancia.filter(pg => !excluirNorms.includes(pg.LIDER?.trim().toLowerCase()))
+    : comDistancia;
+
+  if (!candidatos.length) return null;
+  const melhor = candidatos[0];
+  console.log(`[supabase] PG por proximidade: ${melhor.LIDER} — ${melhor.distancia_km} km`);
+  return melhor;
+}
+
 // Retorna visitantes com status ATIVO (sem contato do líder) agrupados por líder
 async function buscarVisitantesSemContato() {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
@@ -212,6 +255,7 @@ async function atualizarStatusVisitante(id, campos) {
 module.exports = {
   inserirVisitante,
   buscarPGProximo,
+  buscarPGPorProximidade,
   buscarVisitante,
   buscarVisitantePorId,
   buscarVisitantePorTelefone,
