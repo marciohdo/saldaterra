@@ -235,15 +235,27 @@ async function handleLider(phone, text, liderInfo) {
 
           // 3. Consulta todos os líderes já tentados para este visitante
           const lideresAnteriores = await buscarLideresAnteriores(v.visitante_telefone);
-          log(phone, `Líderes já tentados para ${v.visitante_nome}: ${lideresAnteriores.join(', ')}`);
+          const tentativa = lideresAnteriores.length; // 1=2ª tentativa, 2=3ª, 3=4ª
+          log(phone, `Tentativa #${tentativa + 1} para ${v.visitante_nome} — já tentados: ${lideresAnteriores.join(', ')}`);
 
-          // 4. Busca próximo PG mais próximo excluindo todos os líderes anteriores
-          const novoPG = await buscarPGProximo(
-            v.visitante_cidade, v.visitante_bairro,
-            v.vistitante_est_civil, v.visitante_criancas,
-            v.visitante_idade, v.visitante_endereco,
-            lideresAnteriores
-          );
+          // 4. Estratégia de busca por tentativa:
+          //    1ª e 2ª → perfil + proximidade
+          //    3ª em diante → ignora perfil, apenas proximidade
+          let novoPG;
+          if (tentativa >= 2) {
+            log(phone, `3ª+ tentativa — buscando apenas por proximidade (ignorando perfil)`);
+            novoPG = await buscarPGPorProximidade(
+              v.visitante_cidade, v.visitante_bairro, v.visitante_endereco,
+              lideresAnteriores
+            );
+          } else {
+            novoPG = await buscarPGProximo(
+              v.visitante_cidade, v.visitante_bairro,
+              v.vistitante_est_civil, v.visitante_criancas,
+              v.visitante_idade, v.visitante_endereco,
+              lideresAnteriores
+            );
+          }
 
           if (novoPG) {
             // 5. Atualiza a mesma linha com o novo líder e volta para ATIVO
@@ -272,13 +284,35 @@ async function handleLider(phone, text, liderInfo) {
             log(phone, `Novo líder ${novoPG.LIDER} notificado: ${destinoNovo}`);
 
             // Avisa o líder antigo que um novo PG foi encontrado
-            const msgLiderAntigo =
+            mensagem =
               `Tudo certo, líder ${liderInfo.nome}! 😊 Encontrei um novo PG para ${v.visitante_nome}.\n` +
               `Ele(a) foi encaminhado(a) para outro líder que já foi avisado. Muito obrigado pelo retorno! 🙏`;
-            mensagem = msgLiderAntigo;
+
           } else {
-            log(phone, `Nenhum PG disponível para redirecionar visitante ID ${id}`);
-            mensagem = `Líder ${liderInfo.nome}, tentei buscar outro PG para ${v.visitante_nome} mas não encontrei nenhum disponível no momento. Vou verificar e retorno em breve! 🙏`;
+            log(phone, `Nenhum PG disponível na tentativa #${tentativa + 1} para visitante ID ${id}`);
+
+            // 4ª tentativa sem resultado → avisa a secretaria
+            if (tentativa >= 3) {
+              const msgSecretaria =
+                `Olá! 😊 Precisamos de ajuda para encaminhar um visitante.\n\n` +
+                `Nome: ${v.visitante_nome}\n` +
+                `Telefone: ${v.visitante_telefone}\n` +
+                `Endereço: ${v.visitante_endereco}, ${v.visitante_bairro} - ${v.visitante_cidade}\n` +
+                `Idade: ${v.visitante_idade} | Estado civil: ${v.vistitante_est_civil} | Crianças: ${v.visitante_criancas}\n\n` +
+                `Já tentamos ${tentativa + 1} PGs e nenhum atendeu. Pode verificar manualmente? 🙏`;
+              const destinoSec = TEST_MODE ? TEST_PHONE : SECRETARIA_PHONE;
+              await sendTyping(destinoSec);
+              await sendText(destinoSec, msgSecretaria);
+              log(phone, `Secretaria notificada (${destinoSec}) após ${tentativa + 1} tentativas`);
+
+              mensagem =
+                `Líder ${liderInfo.nome}, após várias tentativas não encontrei um PG disponível para ${v.visitante_nome}. ` +
+                `Já avisamos a secretaria para resolver manualmente. Obrigado pelo retorno! 🙏`;
+            } else {
+              mensagem =
+                `Líder ${liderInfo.nome}, não encontrei outro PG disponível agora para ${v.visitante_nome}. ` +
+                `Vou continuar buscando. Muito obrigado pelo retorno! 🙏`;
+            }
           }
         }
       } catch (err) {
