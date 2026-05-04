@@ -5,6 +5,7 @@ const { reply }             = require('./claude');
 const {
   inserirVisitante,
   buscarPGProximo,
+  buscarPGPorProximidade,
   buscarVisitante,
   buscarVisitantePorId,
   buscarVisitantePorTelefone,
@@ -27,11 +28,12 @@ const PARTICIPOU_RE = /^#PARTICIPOU:(\{.*\})/m;
 const NAO_ATENDE_RE = /^#NAO_ATENDE:(\{.*\})/m;
 const REMINDER_MS = 2 * 60 * 1000;
 
-const TEST_MODE               = process.env.TEST_MODE === 'true';
-const TEST_PHONE              = process.env.TEST_PHONE ?? '';
-const TEST_LEADER_PHONE       = process.env.TEST_LEADER_PHONE ?? '';
-const TEST_LEADER_NOME        = process.env.TEST_LEADER_NOME ?? 'Líder Teste';
+const TEST_MODE                = process.env.TEST_MODE === 'true';
+const TEST_PHONE               = process.env.TEST_PHONE ?? '';
+const TEST_LEADER_PHONE        = process.env.TEST_LEADER_PHONE ?? '';
+const TEST_LEADER_NOME         = process.env.TEST_LEADER_NOME ?? 'Líder Teste';
 const TEST_LEADER_LOOKUP_PHONE = process.env.TEST_LEADER_LOOKUP_PHONE ?? '';
+const SECRETARIA_PHONE         = process.env.SECRETARIA_PHONE ?? '5534999318496';
 
 // Cache de líderes verificados: phone → {nome, ...} | false
 const liderCache = new Map();
