@@ -32,14 +32,25 @@ function agruparPorLider(visitantes) {
 async function dispararLembretes() {
   log('Verificando visitantes sem contato...');
   try {
-    const visitantes = await buscarVisitantesSemContato();
-    if (!visitantes.length) {
+    const todos = await buscarVisitantesSemContato();
+    if (!todos.length) {
       log('Nenhum visitante sem contato encontrado.');
       return;
     }
 
+    // Só notifica visitantes cadastrados em dias anteriores — se foi hoje, o líder acabou de ser avisado
+    const dataHoje = hoje();
+    const visitantes = todos.filter(v => v.visitante_data_contato !== dataHoje);
+    const ignorados  = todos.length - visitantes.length;
+
+    if (ignorados) log(`${ignorados} visitante(s) cadastrado(s) hoje ignorado(s).`);
+    if (!visitantes.length) {
+      log('Nenhum visitante de dias anteriores pendente.');
+      return;
+    }
+
     const lideres = agruparPorLider(visitantes);
-    log(`${visitantes.length} visitante(s) sem contato em ${lideres.length} líder(es).`);
+    log(`${visitantes.length} visitante(s) pendente(s) de dias anteriores em ${lideres.length} líder(es).`);
 
     for (const lider of lideres) {
       const lista = lider.visitantes
