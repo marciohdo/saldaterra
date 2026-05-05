@@ -290,9 +290,8 @@ async function handleLider(phone, text, liderInfo) {
               `Endereço: ${v.visitante_endereco}, ${v.visitante_bairro} - ${v.visitante_cidade}\n\n` +
               `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
             try {
-              await sendTyping(destinoNovo);
-              await sendText(destinoNovo, msgNovoLider);
-              log(phone, `Novo líder ${novoPG.LIDER} notificado: ${destinoNovo}`);
+              const enviado = await sendTextComFallback(destinoNovo, msgNovoLider);
+              log(phone, `Novo líder ${novoPG.LIDER} notificado: ${enviado}`);
               if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'sim' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
             } catch (err) {
               log(phone, `Erro ao notificar novo líder ${novoPG.LIDER}: ${err.message}`);

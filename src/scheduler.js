@@ -1,6 +1,6 @@
 require('./load-env');
 const { buscarVisitantesSemContato } = require('./supabase');
-const { sendTyping, sendText }       = require('./evolution-api');
+const { sendTextComFallback }        = require('./evolution-api');
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // verifica a cada 1 hora
 
@@ -62,11 +62,9 @@ async function dispararLembretes() {
         `${lista}\n\n` +
         `Que tal dar uma ligadinha ou mandar uma mensagem para eles hoje? Deus abençoe! 🙏`;
 
-      const destino = lider.telefone.startsWith('55') ? lider.telefone : '55' + lider.telefone;
       try {
-        await sendTyping(destino);
-        await sendText(destino, msg);
-        log(`Lembrete enviado para líder ${lider.nome} (${destino}) — ${lider.visitantes.length} visitante(s)`);
+        const enviado = await sendTextComFallback(lider.telefone, msg);
+        log(`Lembrete enviado para líder ${lider.nome} (${enviado}) — ${lider.visitantes.length} visitante(s)`);
       } catch (err) {
         log(`Erro ao notificar líder ${lider.nome}: ${err.message}`);
       }
