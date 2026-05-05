@@ -42,8 +42,8 @@ async function redirecionarVisitante(id) {
     const v = await buscarVisitantePorId(id);
     if (!v) return;
 
-    await atualizarStatusVisitante(id, { visitante_status: 'não atende' });
-    log(`Visitante ID ${id} (${v.visitante_nome}) → não atende (número inválido)`);
+    await atualizarStatusVisitante(id, { visitante_status: 'numero_inexistente' });
+    log(`Visitante ID ${id} (${v.visitante_nome}) → numero_inexistente (número inválido)`);
 
     const anteriores = await buscarLideresAnteriores(v.visitante_telefone);
     const tentativa  = anteriores.length;

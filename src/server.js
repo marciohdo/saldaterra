@@ -472,7 +472,7 @@ async function handleVisitante(phone, text) {
               if (err.type === 'numero_inexistente' && savedId) {
                 log(phone, `Número inválido para ${liderNome} — redirecionando visitante para próximo PG`);
                 try {
-                  await atualizarStatusVisitante(savedId, { visitante_status: 'não atende' });
+                  await atualizarStatusVisitante(savedId, { visitante_status: 'numero_inexistente' });
                   const anteriores = await buscarLideresAnteriores(phone);
                   const proximoPG  = await buscarPGProximo(json.cidade, json.bairro, json.estado_civil, json.tem_criancas, json.idade, json.endereco, anteriores);
                   if (proximoPG) {
