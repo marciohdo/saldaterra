@@ -75,6 +75,12 @@ async function dispararLembretes() {
         log(`Lembrete enviado para líder ${lider.nome} (${enviado}) — ${lider.visitantes.length} visitante(s)`);
       } catch (err) {
         log(`Erro ao notificar líder ${lider.nome}: ${err.message}`);
+        if (err.type === 'numero_inexistente') {
+          log(`Número inválido para ${lider.nome} — redirecionando ${lider.visitantes.length} visitante(s)`);
+          for (const v of lider.visitantes) {
+            await redirecionarVisitante(v.id);
+          }
+        }
       }
     }
   } catch (err) {
