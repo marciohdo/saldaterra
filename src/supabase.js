@@ -183,11 +183,25 @@ async function verificarLider(telefone) {
 
 // Retorna visitantes pendentes (ATIVO ou convidado pelo lider) atribuídos a este líder
 async function buscarVisitantesDoLider(liderTelefone) {
-  const telNorm = liderTelefone.startsWith('55') ? liderTelefone.slice(2) : liderTelefone;
-  const t1 = encodeURIComponent(liderTelefone);
-  const t2 = encodeURIComponent(telNorm);
+  const telNorm  = liderTelefone.startsWith('55') ? liderTelefone.slice(2) : liderTelefone;
+  // inclui variantes com/sem o 9 após o DDD para cobrir diferentes formatos gravados no banco
+  const telCom9  = telNorm.length === 10
+    ? telNorm.slice(0, 2) + '9' + telNorm.slice(2)          // 10 → 11 dígitos
+    : null;
+  const telSem9  = telNorm.length === 11 && telNorm[2] === '9'
+    ? telNorm.slice(0, 2) + telNorm.slice(3)                 // 11 → 10 dígitos
+    : null;
+
+  const variantes = [
+    liderTelefone,                                           // ex: 553496917795
+    telNorm,                                                 // ex: 3496917795
+    ...(telCom9 ? [telCom9, '55' + telCom9] : []),          // ex: 34996917795, 5534996917795
+    ...(telSem9 ? [telSem9, '55' + telSem9] : []),          // ex: 3496917795 (já incluso), mas cobre outros casos
+  ];
+  const orClause = [...new Set(variantes)].map(v => `lider_telefone.eq.${encodeURIComponent(v)}`).join(',');
+
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
-    `?or=(lider_telefone.eq.${t1},lider_telefone.eq.${t2})` +
+    `?or=(${orClause})` +
     `&visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_ini,visitante_data_fim,visitante_cidade,visitante_bairro` +
     `&order=id.desc`;
