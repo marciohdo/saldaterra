@@ -229,9 +229,10 @@ async function handleLider(phone, text, liderInfo) {
         // 1. Busca dados do visitante antes de alterar o status
         const v = await buscarVisitantePorId(id);
         if (v) {
-          // 2. Marca como não atende (mantém o líder atual no registro para o histórico)
-          await atualizarStatusVisitante(id, { visitante_status: 'não atende' });
-          log(phone, `Visitante ID ${id} → não atende (motivo: ${motivo})`);
+          // 2. Marca status conforme motivo (mantém líder no registro para histórico)
+          const statusNaoAtende = motivo === 'lotado' ? 'lotado' : 'não atende';
+          await atualizarStatusVisitante(id, { visitante_status: statusNaoAtende });
+          log(phone, `Visitante ID ${id} → ${statusNaoAtende} (motivo: ${motivo})`);
 
           // 3. Consulta todos os líderes já tentados para este visitante
           const lideresAnteriores = await buscarLideresAnteriores(v.visitante_telefone);
