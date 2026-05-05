@@ -175,7 +175,7 @@ async function buscarVisitantesDoLider(liderTelefone) {
   const t2 = encodeURIComponent(telNorm);
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
     `?or=(lider_telefone.eq.${t1},lider_telefone.eq.${t2})` +
-    `&visitante_status=not.in.(frequentando,não atende)` +
+    `&visitante_status=not.in.(frequentando,não atende,lotado)` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_ini,visitante_data_fim,visitante_cidade,visitante_bairro` +
     `&order=id.desc`;
   const res = await fetch(url, { headers: HEADERS });
@@ -229,7 +229,7 @@ async function buscarPGPorProximidade(cidade, bairro, endereco, excluirLideres =
 // Retorna visitantes com status ATIVO (sem contato do líder) agrupados por líder
 async function buscarVisitantesSemContato() {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
-    `?visitante_status=eq.ATIVO` +
+    `?visitante_status=not.in.(frequentando,não atende,lotado)` +
     `&lider_telefone=not.is.null` +
     `&lider_telefone=neq.` +
     `&select=id,visitante_nome,visitante_telefone,lider,lider_telefone,visitante_data_contato` +
