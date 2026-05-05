@@ -469,40 +469,13 @@ async function handleVisitante(phone, text) {
             } catch (err) {
               log(phone, `Aviso: não foi possível notificar líder (${err.message})`);
               if (savedId) await atualizarStatusVisitante(savedId, { lider_avisado: 'não' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
-              // Número inexistente mesmo com fallback — redireciona para próximo PG
               if (err.type === 'numero_inexistente' && savedId) {
-                log(phone, `Número inválido para ${liderNome} — redirecionando visitante para próximo PG`);
-                try {
-                  await atualizarStatusVisitante(savedId, { visitante_status: 'numero_inexistente' });
-                  const anteriores = await buscarLideresAnteriores(phone);
-                  const proximoPG  = await buscarPGProximo(json.cidade, json.bairro, json.estado_civil, json.tem_criancas, json.idade, json.endereco, anteriores);
-                  if (proximoPG) {
-                    const novoReg = await inserirVisitante({
-                      visitante_nome: json.nome_completo, visitante_telefone: phone,
-                      visitante_idade: json.idade, vistitante_est_civil: json.estado_civil,
-                      visitante_criancas: json.tem_criancas, visitante_endereco: json.endereco,
-                      visitante_bairro: json.bairro, visitante_cidade: json.cidade,
-                      lider: proximoPG.LIDER, lider_telefone: proximoPG.CONTATO,
-                      visitante_status: 'ATIVO',
-                      visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
-                      Data_atu: new Date().toISOString(),
-                    });
-                    const novoId = novoReg?.[0]?.id ?? null;
-                    const msgNovo = `Oi líder ${proximoPG.LIDER}, que alegria! 😊 Um novo visitante foi indicado para o seu PG.\n\nNome: ${json.nome_completo}\nTelefone: ${phone}\nIdade: ${json.idade}\nEstado civil: ${json.estado_civil}\nCrianças: ${json.tem_criancas}\nEndereço: ${json.endereco}, ${json.bairro} - ${json.cidade}\n\nEntre em contato com ele(a) para dar as boas-vindas! 🌟`;
-                    try {
-                      const envNovo = await sendTextComFallback(TEST_MODE ? TEST_PHONE : proximoPG.CONTATO, msgNovo);
-                      log(phone, `Redirecionado para ${proximoPG.LIDER} — notificado: ${envNovo}`);
-                      if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'sim' }).catch(() => {});
-                    } catch (e2) {
-                      log(phone, `Erro ao notificar novo líder ${proximoPG.LIDER}: ${e2.message}`);
-                      if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'não' }).catch(() => {});
-                    }
-                  } else {
-                    log(phone, 'Nenhum PG disponível para redirecionamento');
-                  }
-                } catch (e3) {
-                  log(phone, `Erro no redirecionamento automático: ${e3.message}`);
-                }
+                await redirecionarVisitante(savedId, {
+                  nome: json.nome_completo, telefone: phone,
+                  idade: json.idade, estadoCivil: json.estado_civil,
+                  criancas: json.tem_criancas, endereco: json.endereco,
+                  bairro: json.bairro, cidade: json.cidade,
+                }, phone);
               }
             }
           }
