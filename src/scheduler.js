@@ -1,6 +1,14 @@
 require('./load-env');
-const { buscarVisitantesSemContato } = require('./supabase');
-const { sendTextComFallback }        = require('./evolution-api');
+const {
+  buscarVisitantesSemContato,
+  buscarVisitantePorId,
+  buscarLideresAnteriores,
+  buscarPGProximo,
+  buscarPGPorProximidade,
+  atualizarStatusVisitante,
+  inserirVisitante,
+} = require('./supabase');
+const { sendTextComFallback } = require('./evolution-api');
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // verifica a cada 1 hora
 
