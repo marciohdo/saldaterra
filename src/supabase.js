@@ -144,13 +144,25 @@ async function buscarVisitante(telefone, nome) {
 
 // Verifica se o telefone pertence a um líder (LISTA_PGS ou LISTA_ACIONAMENTOS)
 async function verificarLider(telefone) {
-  // Números WhatsApp chegam como "5534xxxxxxxx"; banco armazena sem "55"
+  // Números WhatsApp chegam como "5534xxxxxxxx"; banco pode armazenar sem "55" e/ou sem o 9 após DDD
   const telNorm = telefone.startsWith('55') ? telefone.slice(2) : telefone;
-  const t1 = encodeURIComponent(telefone);
-  const t2 = encodeURIComponent(telNorm);
+  // Variante sem o 9 após o DDD (ex: 34998258133 → 3498258133)
+  const telSemNove = telNorm.length === 11 && telNorm[2] === '9'
+    ? telNorm.slice(0, 2) + telNorm.slice(3)
+    : null;
 
-  // Tenta LISTA_PGS
-  const url1 = `${BASE}/rest/v1/LISTA_PGS?or=(CONTATO.eq.${t1},CONTATO.eq.${t2})` +
+  const variantes = [
+    encodeURIComponent(telefone),                    // 5534998258133
+    encodeURIComponent(telNorm),                     // 34998258133
+    ...(telSemNove ? [
+      encodeURIComponent(telSemNove),                // 3498258133
+      encodeURIComponent('55' + telSemNove),         // 553498258133
+    ] : []),
+  ];
+  const orContato = variantes.map(v => `CONTATO.eq.${v}`).join(',');
+
+  // Tenta LISTA_PGS — fonte autoritativa de líderes
+  const url1 = `${BASE}/rest/v1/LISTA_PGS?or=(${orContato})` +
     `&select=LIDER,CONTATO,BAIRRO,CIDADE,REDE,PERFIL,"DIA DO PG",HORARIO&limit=1`;
   const res1 = await fetch(url1, { headers: HEADERS });
   if (!res1.ok) throw new Error(`Supabase ${res1.status}: ${await res1.text()}`);
@@ -158,7 +170,8 @@ async function verificarLider(telefone) {
   if (rows1.length) return { nome: rows1[0].LIDER?.trim(), telefone, fonte: 'LISTA_PGS', pg: rows1[0] };
 
   // Tenta LISTA_ACIONAMENTOS (coluna lider_telefone)
-  const url2 = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?or=(lider_telefone.eq.${t1},lider_telefone.eq.${t2})` +
+  const orLider = variantes.map(v => `lider_telefone.eq.${v}`).join(',');
+  const url2 = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?or=(${orLider})` +
     `&select=lider,lider_telefone&limit=1`;
   const res2 = await fetch(url2, { headers: HEADERS });
   if (!res2.ok) throw new Error(`Supabase ${res2.status}: ${await res2.text()}`);
