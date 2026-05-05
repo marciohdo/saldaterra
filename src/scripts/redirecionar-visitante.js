@@ -10,7 +10,7 @@ const {
 const { sendTextComFallback } = require('../evolution-api');
 
 // ── Configuração pontual ──────────────────────────────────────────────────────
-const VISITANTE_ID = 279; // Aline Fernandes Peres
+const VISITANTE_ID = 282; // Hermom Silvestre Ribeiro
 const MOTIVO       = 'não atende'; // motivo informado pelo líder
 // ─────────────────────────────────────────────────────────────────────────────
 
