@@ -92,7 +92,10 @@ function log(phone, msg) {
 }
 
 async function getLiderInfo(phone) {
-  if (liderCache.has(phone)) return liderCache.get(phone);
+  // Só usa cache para líderes confirmados — não-líderes sempre re-consultam o banco
+  // para garantir que um líder nunca seja tratado como visitante
+  const cached = liderCache.get(phone);
+  if (cached) return cached;
 
   // Em TEST_MODE, injeta o líder de teste sem consultar o banco
   if (TEST_MODE && TEST_LEADER_PHONE && phone === TEST_LEADER_PHONE) {
@@ -104,7 +107,7 @@ async function getLiderInfo(phone) {
 
   try {
     const info = await verificarLider(phone);
-    liderCache.set(phone, info ?? false);
+    if (info) liderCache.set(phone, info); // só cacheia se confirmado como líder
     return info ?? false;
   } catch (err) {
     log(phone, `Aviso: erro ao verificar líder — ${err.message}`);
