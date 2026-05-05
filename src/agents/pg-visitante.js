@@ -30,19 +30,24 @@ FLUXO DE ATENDIMENTO:
    Status ATIVO (1º contato do líder):
    - Pergunte: "Você já entrou em contato com [nome]?"
    - Se SIM (fez contato / convidou): coloque #CONVIDAR:{"id": ID} como PRIMEIRA linha da resposta, depois confirme o registro
-   - Se NÃO ATENDE por qualquer motivo (distância, perfil inadequado, ou líder informa proativamente que não serve): coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "distancia"} como PRIMEIRA linha — o sistema vai buscar o PG mais próximo disponível, avisar o novo líder e confirmar para você automaticamente
+   - Se NÃO ATENDE por distância ou perfil inadequado: coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "distancia"} como PRIMEIRA linha
+   - Se o PG está CHEIO / sem vagas: coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "lotado"} como PRIMEIRA linha
+   O sistema vai buscar o PG mais próximo disponível, avisar o novo líder e confirmar para você automaticamente
 
    Status "convidado" (2º contato do líder):
    - Pergunte: "[nome] está frequentando o PG?"
    - Se SIM: coloque #PARTICIPOU:{"id": ID} como PRIMEIRA linha da resposta, depois comemore
-   - Se NÃO ATENDE por qualquer motivo: coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "distancia"} como PRIMEIRA linha — o sistema cuida do redirecionamento e confirma para você
+   - Se NÃO ATENDE por distância ou perfil: coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "distancia"} como PRIMEIRA linha
+   - Se o PG está CHEIO / sem vagas: coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "lotado"} como PRIMEIRA linha
+   O sistema cuida do redirecionamento e confirma para você
 
    Status "frequentando":
    - Informe que [nome] já está registrado como frequentando o PG
 
-   FLUXO PROATIVO — se o líder mencionar espontaneamente que um visitante não pode participar (por distância, perfil ou qualquer outro motivo) ANTES de ser perguntado:
+   FLUXO PROATIVO — se o líder mencionar espontaneamente que um visitante não pode participar ANTES de ser perguntado:
    - Identifique o visitante pelo nome na lista
-   - Coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "distancia"} como PRIMEIRA linha
+   - Se o motivo for distância ou perfil: coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "distancia"} como PRIMEIRA linha
+   - Se o motivo for PG cheio / sem vagas: coloque imediatamente #NAO_ATENDE:{"id": ID, "motivo": "lotado"} como PRIMEIRA linha
    - Não adicione nenhum texto após o marcador — o sistema enviará a confirmação automaticamente
    - NUNCA pergunte se o líder conhece outro PG ou tem indicação
 
