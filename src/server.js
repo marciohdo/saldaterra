@@ -59,6 +59,36 @@ function isVoiceMessage(data) {
   return !!(data?.message?.audioMessage || data?.message?.pttMessage);
 }
 
+const PROMPT_INJECTION_RE = /ignore\s+(previous|todas?|suas?|o\s+prompt|instru)/i
+  || /(?:esqueça|esquecer|apagar?|limpar?)\s+(?:tudo|suas?\s+instru|o\s+prompt)/i;
+
+const PROMPT_INJECTION_PATTERNS = [
+  /ignore\s+(previous|todas?\s+as?\s+instru|suas?\s+instru|o\s+prompt)/i,
+  /esqueça\s+(tudo|suas?\s+instru|o\s+prompt)/i,
+  /novo\s+prompt/i,
+  /novas?\s+instru[çc][õo]es/i,
+  /mude?\s+seu\s+(prompt|comportamento|instru)/i,
+  /altere?\s+suas?\s+instru/i,
+  /voc[eê]\s+(agora\s+[eé]|deve\s+ser|passa\s+a\s+ser)/i,
+  /finja\s+(que|ser)/i,
+  /aja\s+como/i,
+  /atue\s+como/i,
+  /act\s+as/i,
+  /you\s+are\s+now/i,
+  /pretend\s+(to\s+be|you)/i,
+  /system\s*:/i,
+  /\[system\]/i,
+  /instruc[çc][aã]o\s*:/i,
+  /prompt\s*:/i,
+  /DAN\b/,
+  /jailbreak/i,
+  /bypass\s+(your|the|suas?)\s+(rules?|regras?|instru)/i,
+];
+
+function isPromptInjection(text) {
+  return PROMPT_INJECTION_PATTERNS.some(re => re.test(text));
+}
+
 function log(phone, msg) {
   const ts = new Date().toLocaleTimeString('pt-BR');
   console.log(`[${ts}] [${phone ?? 'server'}] ${msg}`);
