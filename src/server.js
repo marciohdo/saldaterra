@@ -276,110 +276,27 @@ async function handleLider(phone, text, liderInfo) {
     if (mNaoAtende) {
       try {
         const { id, motivo } = JSON.parse(mNaoAtende[1]);
-
-        // 1. Busca dados do visitante antes de alterar o status
         const v = await buscarVisitantePorId(id);
         if (v) {
-          // 2. Marca status conforme motivo (mantém líder no registro para histórico)
-          const statusNaoAtende = motivo === 'lotado' ? 'lotado' : 'não atende';
-          await atualizarStatusVisitante(id, { visitante_status: statusNaoAtende });
-          log(phone, `Visitante ID ${id} → ${statusNaoAtende} (motivo: ${motivo})`);
+          const statusAtual = motivo === 'lotado' ? 'lotado' : 'não atende';
+          await atualizarStatusVisitante(id, { visitante_status: statusAtual });
+          log(phone, `Visitante ID ${id} → ${statusAtual} (motivo: ${motivo})`);
 
-          // 3. Consulta todos os líderes já tentados para este visitante
-          const lideresAnteriores = await buscarLideresAnteriores(v.visitante_telefone);
-          const tentativa = lideresAnteriores.length; // 1=2ª tentativa, 2=3ª, 3=4ª
-          log(phone, `Tentativa #${tentativa + 1} para ${v.visitante_nome} — já tentados: ${lideresAnteriores.join(', ')}`);
+          // Redireciona em loop até conseguir notificar um líder
+          await redirecionarVisitante(id, {
+            nome:       v.visitante_nome,
+            telefone:   v.visitante_telefone,
+            idade:      v.visitante_idade,
+            estadoCivil: v.vistitante_est_civil,
+            criancas:   v.visitante_criancas,
+            endereco:   v.visitante_endereco,
+            bairro:     v.visitante_bairro,
+            cidade:     v.visitante_cidade,
+          }, phone);
 
-          // 4. Estratégia de busca por tentativa:
-          //    1ª e 2ª → perfil + proximidade
-          //    3ª em diante → ignora perfil, apenas proximidade
-          let novoPG;
-          if (tentativa >= 2) {
-            log(phone, `3ª+ tentativa — buscando apenas por proximidade (ignorando perfil)`);
-            novoPG = await buscarPGPorProximidade(
-              v.visitante_cidade, v.visitante_bairro, v.visitante_endereco,
-              lideresAnteriores
-            );
-          } else {
-            novoPG = await buscarPGProximo(
-              v.visitante_cidade, v.visitante_bairro,
-              v.vistitante_est_civil, v.visitante_criancas,
-              v.visitante_idade, v.visitante_endereco,
-              lideresAnteriores
-            );
-          }
-
-          if (novoPG) {
-            // 5. Cria nova linha para o novo líder (linha antiga fica como histórico com 'não atende')
-            const novoRegistro = await inserirVisitante({
-              visitante_nome:         v.visitante_nome,
-              visitante_telefone:     v.visitante_telefone,
-              visitante_idade:        v.visitante_idade,
-              vistitante_est_civil:   v.vistitante_est_civil,
-              visitante_criancas:     v.visitante_criancas,
-              visitante_endereco:     v.visitante_endereco,
-              visitante_bairro:       v.visitante_bairro,
-              visitante_cidade:       v.visitante_cidade,
-              lider:                  novoPG.LIDER,
-              lider_telefone:         novoPG.CONTATO,
-              visitante_status:       'ATIVO',
-              visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
-              Data_atu:               new Date().toISOString(),
-            });
-            const novoId = novoRegistro?.[0]?.id ?? null;
-            log(phone, `Nova linha criada para ${v.visitante_nome} → ${novoPG.LIDER}${novoId ? ` (id=${novoId})` : ''}`);
-
-            // Notifica o novo líder
-            const destinoNovo = telefoneDestino(novoPG.CONTATO);
-            const msgNovoLider =
-              `Oi líder ${novoPG.LIDER}, que alegria! 😊 Um visitante foi redirecionado para o seu PG.\n\n` +
-              `Nome: ${v.visitante_nome}\n` +
-              `Telefone: ${v.visitante_telefone}\n` +
-              `Idade: ${v.visitante_idade}\n` +
-              `Estado civil: ${v.vistitante_est_civil}\n` +
-              `Crianças: ${v.visitante_criancas}\n` +
-              `Endereço: ${v.visitante_endereco}, ${v.visitante_bairro} - ${v.visitante_cidade}\n\n` +
-              `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
-            try {
-              const enviado = await sendTextComFallback(destinoNovo, msgNovoLider);
-              log(phone, `Novo líder ${novoPG.LIDER} notificado: ${enviado}`);
-              if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'sim' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
-            } catch (err) {
-              log(phone, `Erro ao notificar novo líder ${novoPG.LIDER}: ${err.message}`);
-              if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'não' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
-            }
-
-            // Avisa o líder antigo que um novo PG foi encontrado
-            mensagem =
-              `Tudo certo, líder ${liderInfo.nome}! 😊 Encontrei um novo PG para ${v.visitante_nome}.\n` +
-              `Ele(a) foi encaminhado(a) para outro líder que já foi avisado. Muito obrigado pelo retorno! 🙏`;
-
-          } else {
-            log(phone, `Nenhum PG disponível na tentativa #${tentativa + 1} para visitante ID ${id}`);
-
-            // 4ª tentativa sem resultado → avisa a secretaria
-            if (tentativa >= 3) {
-              const msgSecretaria =
-                `Olá! 😊 Precisamos de ajuda para encaminhar um visitante.\n\n` +
-                `Nome: ${v.visitante_nome}\n` +
-                `Telefone: ${v.visitante_telefone}\n` +
-                `Endereço: ${v.visitante_endereco}, ${v.visitante_bairro} - ${v.visitante_cidade}\n` +
-                `Idade: ${v.visitante_idade} | Estado civil: ${v.vistitante_est_civil} | Crianças: ${v.visitante_criancas}\n\n` +
-                `Já tentamos ${tentativa + 1} PGs e nenhum atendeu. Pode verificar manualmente? 🙏`;
-              const destinoSec = TEST_MODE ? TEST_PHONE : SECRETARIA_PHONE;
-              await sendTyping(destinoSec);
-              await sendText(destinoSec, msgSecretaria);
-              log(phone, `Secretaria notificada (${destinoSec}) após ${tentativa + 1} tentativas`);
-
-              mensagem =
-                `Líder ${liderInfo.nome}, após várias tentativas não encontrei um PG disponível para ${v.visitante_nome}. ` +
-                `Já avisamos a secretaria para resolver manualmente. Obrigado pelo retorno! 🙏`;
-            } else {
-              mensagem =
-                `Líder ${liderInfo.nome}, não encontrei outro PG disponível agora para ${v.visitante_nome}. ` +
-                `Vou continuar buscando. Muito obrigado pelo retorno! 🙏`;
-            }
-          }
+          mensagem =
+            `Tudo certo, líder ${liderInfo.nome}! 😊 Encontrei um novo PG para ${v.visitante_nome}.\n` +
+            `Ele(a) foi encaminhado(a) para outro líder que já foi avisado. Muito obrigado pelo retorno! 🙏`;
         }
       } catch (err) {
         log(phone, `Erro ao processar #NAO_ATENDE: ${err.message}`);
