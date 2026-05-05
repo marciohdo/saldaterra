@@ -53,22 +53,28 @@ async function sendText(number, text) {
   return res.json();
 }
 
-// Normaliza o número e gera todas as variantes a tentar:
-// 1. Remove não-dígitos, garante prefixo 55
-// 2. Variante sem o 9 após DDD (11 → 10 dígitos locais): 34998258133 → 3498258133
-// 3. Variante com o 9 após DDD (10 → 11 dígitos locais): 3496550333  → 34996550333
+// Normaliza o número e gera candidatos para envio.
+// Formato alvo: 13 dígitos — 55 + DDD(2) + 9 + número(8) — ex: 5534996689999
+// Fallback:     12 dígitos — 55 + DDD(2) + número(8)      — ex: 553496689999
 function gerarCandidatos(telefone) {
   const digitos = telefone.replace(/\D/g, '');
   const com55   = digitos.startsWith('55') ? digitos : '55' + digitos;
-  const local   = com55.slice(2);
-  const set     = new Set([com55]);
+  const local   = com55.slice(2); // parte sem o código do país
 
   if (local.length === 11 && local[2] === '9') {
-    set.add('55' + local.slice(0, 2) + local.slice(3)); // sem o 9
-  } else if (local.length === 10) {
-    set.add('55' + local.slice(0, 2) + '9' + local.slice(2)); // com o 9
+    // ✓ já é 13 dígitos — formato correto; fallback: sem o 9 (12 dígitos)
+    return [com55, '55' + local.slice(0, 2) + local.slice(3)];
   }
-  return [...set];
+
+  if (local.length === 10) {
+    // formato antigo sem o 9 (12 dígitos) — tenta 13 dígitos primeiro
+    const com9 = '55' + local.slice(0, 2) + '9' + local.slice(2);
+    return [com9, com55];
+  }
+
+  // número fora do padrão esperado — usa como está e loga aviso
+  console.warn(`[evolution-api] Número fora do padrão (${com55.length} dígitos): ${com55}`);
+  return [com55];
 }
 
 // Tenta enviar para cada candidato de número.
