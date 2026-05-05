@@ -94,9 +94,8 @@ async function sendTextComFallback(telefone, text) {
         await sendTyping(alt);
         await sendText(alt, text);
         return alt; // variante funcionou
-      } catch (err2) {
-        if (!isNumeroInexistente(err2.message)) throw err2;
-        // continua para próxima variante
+      } catch (_err2) {
+        // variante também falhou — continua para próxima (número original já confirmado inexistente)
       }
     }
 
