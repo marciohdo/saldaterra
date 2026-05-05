@@ -402,7 +402,6 @@ async function handleVisitante(phone, text) {
           log(phone, `Visitante salvo: ${dbRecord.visitante_nome}${savedId ? ` (id=${savedId})` : ''}`);
 
           if (liderTelefone) {
-            const destino = telefoneDestino(liderTelefone);
             const msgLider =
               `Oi líder ${liderNome}, que alegria! 😊 Um novo visitante foi indicado para o seu PG.\n\n` +
               `Nome: ${json.nome_completo}\n` +
@@ -412,14 +411,49 @@ async function handleVisitante(phone, text) {
               `Crianças: ${json.tem_criancas}\n` +
               `Endereço: ${json.endereco}, ${json.bairro} - ${json.cidade}\n\n` +
               `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
+            const destinoFinal = TEST_MODE ? TEST_PHONE : liderTelefone;
             try {
-              await sendTyping(destino);
-              await sendText(destino, msgLider);
-              log(phone, `Líder ${liderNome} notificado: ${destino}${TEST_MODE ? ' [MODO TESTE]' : ''}`);
+              const enviado = await sendTextComFallback(destinoFinal, msgLider);
+              log(phone, `Líder ${liderNome} notificado: ${enviado}${TEST_MODE ? ' [MODO TESTE]' : ''}`);
               if (savedId) await atualizarStatusVisitante(savedId, { lider_avisado: 'sim' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
             } catch (err) {
-              log(phone, `Aviso: não foi possível notificar líder — ${err.message}`);
+              log(phone, `Aviso: não foi possível notificar líder (${err.message})`);
               if (savedId) await atualizarStatusVisitante(savedId, { lider_avisado: 'não' }).catch(e => log(phone, `Aviso lider_avisado: ${e.message}`));
+              // Número inexistente mesmo com fallback — redireciona para próximo PG
+              if (err.type === 'numero_inexistente' && savedId) {
+                log(phone, `Número inválido para ${liderNome} — redirecionando visitante para próximo PG`);
+                try {
+                  await atualizarStatusVisitante(savedId, { visitante_status: 'não atende' });
+                  const anteriores = await buscarLideresAnteriores(phone);
+                  const proximoPG  = await buscarPGProximo(json.cidade, json.bairro, json.estado_civil, json.tem_criancas, json.idade, json.endereco, anteriores);
+                  if (proximoPG) {
+                    const novoReg = await inserirVisitante({
+                      visitante_nome: json.nome_completo, visitante_telefone: phone,
+                      visitante_idade: json.idade, vistitante_est_civil: json.estado_civil,
+                      visitante_criancas: json.tem_criancas, visitante_endereco: json.endereco,
+                      visitante_bairro: json.bairro, visitante_cidade: json.cidade,
+                      lider: proximoPG.LIDER, lider_telefone: proximoPG.CONTATO,
+                      visitante_status: 'ATIVO',
+                      visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
+                      Data_atu: new Date().toISOString(),
+                    });
+                    const novoId = novoReg?.[0]?.id ?? null;
+                    const msgNovo = `Oi líder ${proximoPG.LIDER}, que alegria! 😊 Um novo visitante foi indicado para o seu PG.\n\nNome: ${json.nome_completo}\nTelefone: ${phone}\nIdade: ${json.idade}\nEstado civil: ${json.estado_civil}\nCrianças: ${json.tem_criancas}\nEndereço: ${json.endereco}, ${json.bairro} - ${json.cidade}\n\nEntre em contato com ele(a) para dar as boas-vindas! 🌟`;
+                    try {
+                      const envNovo = await sendTextComFallback(TEST_MODE ? TEST_PHONE : proximoPG.CONTATO, msgNovo);
+                      log(phone, `Redirecionado para ${proximoPG.LIDER} — notificado: ${envNovo}`);
+                      if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'sim' }).catch(() => {});
+                    } catch (e2) {
+                      log(phone, `Erro ao notificar novo líder ${proximoPG.LIDER}: ${e2.message}`);
+                      if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'não' }).catch(() => {});
+                    }
+                  } else {
+                    log(phone, 'Nenhum PG disponível para redirecionamento');
+                  }
+                } catch (e3) {
+                  log(phone, `Erro no redirecionamento automático: ${e3.message}`);
+                }
+              }
             }
           }
 
