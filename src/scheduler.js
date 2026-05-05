@@ -33,60 +33,20 @@ function agruparPorLider(visitantes) {
   return [...mapa.values()];
 }
 
-async function redirecionarVisitante(id) {
+async function chamarRedirecionamento(id) {
   try {
     const v = await buscarVisitantePorId(id);
     if (!v) return;
-
-    await atualizarStatusVisitante(id, { visitante_status: 'numero_inexistente' });
-    log(`Visitante ID ${id} (${v.visitante_nome}) → numero_inexistente (número inválido)`);
-
-    const anteriores = await buscarLideresAnteriores(v.visitante_telefone);
-    const tentativa  = anteriores.length;
-
-    const novoPG = tentativa >= 2
-      ? await buscarPGPorProximidade(v.visitante_cidade, v.visitante_bairro, v.visitante_endereco, anteriores)
-      : await buscarPGProximo(v.visitante_cidade, v.visitante_bairro, v.vistitante_est_civil, v.visitante_criancas, v.visitante_idade, v.visitante_endereco, anteriores);
-
-    if (!novoPG) {
-      log(`Nenhum PG disponível para ${v.visitante_nome} na tentativa #${tentativa + 1}`);
-      return;
-    }
-
-    const novoReg = await inserirVisitante({
-      visitante_nome:         v.visitante_nome,
-      visitante_telefone:     v.visitante_telefone,
-      visitante_idade:        v.visitante_idade,
-      vistitante_est_civil:   v.vistitante_est_civil,
-      visitante_criancas:     v.visitante_criancas,
-      visitante_endereco:     v.visitante_endereco,
-      visitante_bairro:       v.visitante_bairro,
-      visitante_cidade:       v.visitante_cidade,
-      lider:                  novoPG.LIDER,
-      lider_telefone:         novoPG.CONTATO,
-      visitante_status:       'ATIVO',
-      visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
-      Data_atu:               new Date().toISOString(),
-    });
-    const novoId = novoReg?.[0]?.id ?? null;
-    log(`Nova linha criada para ${v.visitante_nome} → ${novoPG.LIDER} (id=${novoId})`);
-
-    const msgNovo =
-      `Oi líder ${novoPG.LIDER}, que alegria! 😊 Um visitante foi redirecionado para o seu PG.\n\n` +
-      `Nome: ${v.visitante_nome}\nTelefone: ${v.visitante_telefone}\nIdade: ${v.visitante_idade}\n` +
-      `Estado civil: ${v.vistitante_est_civil}\nCrianças: ${v.visitante_criancas}\n` +
-      `Endereço: ${v.visitante_endereco}, ${v.visitante_bairro} - ${v.visitante_cidade}\n\n` +
-      `Entre em contato com ele(a) para dar as boas-vindas! 🌟`;
-
-    try {
-      const enviado = await sendTextComFallback(novoPG.CONTATO, msgNovo);
-      log(`Novo líder ${novoPG.LIDER} notificado: ${enviado}`);
-      if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'sim' }).catch(() => {});
-    } catch (e) {
-      log(`Erro ao notificar novo líder ${novoPG.LIDER}: ${e.message}`);
-      if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'não' }).catch(() => {});
-      // Se o novo líder também tiver número inválido, o próximo ciclo do scheduler cuidará
-    }
+    await redirecionarVisitante(id, {
+      nome:        v.visitante_nome,
+      telefone:    v.visitante_telefone,
+      idade:       v.visitante_idade,
+      estadoCivil: v.vistitante_est_civil,
+      criancas:    v.visitante_criancas,
+      endereco:    v.visitante_endereco,
+      bairro:      v.visitante_bairro,
+      cidade:      v.visitante_cidade,
+    }, `scheduler:${id}`);
   } catch (err) {
     log(`Erro ao redirecionar visitante ID ${id}: ${err.message}`);
   }
@@ -133,7 +93,7 @@ async function dispararLembretes() {
         if (err.type === 'numero_inexistente') {
           log(`Número inválido para ${lider.nome} — redirecionando ${lider.visitantes.length} visitante(s)`);
           for (const v of lider.visitantes) {
-            await redirecionarVisitante(v.id);
+            await chamarRedirecionamento(v.id);
           }
         }
       }
