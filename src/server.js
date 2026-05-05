@@ -55,6 +55,10 @@ function extractText(data) {
   );
 }
 
+function isVoiceMessage(data) {
+  return !!(data?.message?.audioMessage || data?.message?.pttMessage);
+}
+
 function log(phone, msg) {
   const ts = new Date().toLocaleTimeString('pt-BR');
   console.log(`[${ts}] [${phone ?? 'server'}] ${msg}`);
@@ -140,7 +144,16 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
 
   const phone     = remoteJid.replace(/@.*/, '');
   const messageId = data?.key?.id;
-  const text      = extractText(data);
+
+  if (isVoiceMessage(data)) {
+    markAsRead(remoteJid, messageId);
+    log(phone, 'Mensagem de voz recebida — informando que não é suportado');
+    await sendTyping(phone);
+    await sendText(phone, 'Oi! 😊 Por enquanto não consigo ouvir mensagens de voz. Me manda um textinho que eu te ajudo rapidinho! 🙏');
+    return;
+  }
+
+  const text = extractText(data);
   if (!text) return;
 
   markAsRead(remoteJid, messageId);
