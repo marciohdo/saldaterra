@@ -17,6 +17,7 @@ const {
 const conversation          = require('./conversation');
 const { SYSTEM_PROMPT: LUZ_IA } = require('./agents/luz-ia');
 const { buildSystemPrompt: buildPGPrompt } = require('./agents/pg-visitante');
+const { redirecionarVisitante } = require('./redirecionamento');
 const scheduler             = require('./scheduler');
 
 const app = express();
