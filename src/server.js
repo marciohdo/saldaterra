@@ -59,9 +59,6 @@ function isVoiceMessage(data) {
   return !!(data?.message?.audioMessage || data?.message?.pttMessage);
 }
 
-const PROMPT_INJECTION_RE = /ignore\s+(previous|todas?|suas?|o\s+prompt|instru)/i
-  || /(?:esqueça|esquecer|apagar?|limpar?)\s+(?:tudo|suas?\s+instru|o\s+prompt)/i;
-
 const PROMPT_INJECTION_PATTERNS = [
   /ignore\s+(previous|todas?\s+as?\s+instru|suas?\s+instru|o\s+prompt)/i,
   /esqueça\s+(tudo|suas?\s+instru|o\s+prompt)/i,
@@ -188,6 +185,13 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
 
   markAsRead(remoteJid, messageId);
   log(phone, `Mensagem recebida: "${text}"`);
+
+  if (isPromptInjection(text)) {
+    log(phone, 'Tentativa de prompt injection bloqueada');
+    await sendTyping(phone);
+    await sendText(phone, 'Oi! 😊 Não consigo processar esse tipo de mensagem. Se quiser encontrar um Pequeno Grupo, é só me contar um pouquinho sobre você! 🙏');
+    return;
+  }
 
   // ── Verificação de líder ──────────────────────────────────────────────────
   const liderInfo = await getLiderInfo(phone);
