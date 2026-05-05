@@ -1,6 +1,6 @@
 require('./load-env');
 const express = require('express');
-const { sendText, sendTyping, markAsRead } = require('./evolution-api');
+const { sendText, sendTyping, markAsRead, sendTextComFallback } = require('./evolution-api');
 const { reply }             = require('./claude');
 const {
   inserirVisitante,
