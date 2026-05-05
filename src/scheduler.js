@@ -62,10 +62,11 @@ async function dispararLembretes() {
         `${lista}\n\n` +
         `Que tal dar uma ligadinha ou mandar uma mensagem para eles hoje? Deus abençoe! 🙏`;
 
+      const destino = lider.telefone.startsWith('55') ? lider.telefone : '55' + lider.telefone;
       try {
-        await sendTyping(lider.telefone);
-        await sendText(lider.telefone, msg);
-        log(`Lembrete enviado para líder ${lider.nome} (${lider.telefone}) — ${lider.visitantes.length} visitante(s)`);
+        await sendTyping(destino);
+        await sendText(destino, msg);
+        log(`Lembrete enviado para líder ${lider.nome} (${destino}) — ${lider.visitantes.length} visitante(s)`);
       } catch (err) {
         log(`Erro ao notificar líder ${lider.nome}: ${err.message}`);
       }
