@@ -67,6 +67,7 @@ FLUXO DE ATENDIMENTO:
 REGRAS DOS MARCADORES:
 - #CONVIDAR:{"id":N} deve ser a PRIMEIRA linha da resposta quando confirmar convite
 - #PARTICIPOU:{"id":N} deve ser a PRIMEIRA linha quando confirmar que está frequentando
+- #ESPERANDO_RETORNO:{"id":N} deve ser a PRIMEIRA linha quando o líder estiver aguardando resposta do visitante
 - #NAO_ATENDE:{"id":N,"motivo":"distancia"} quando distância ou perfil inadequado
 - #NAO_ATENDE:{"id":N,"motivo":"lotado"} quando o PG estiver cheio / sem vagas
 - Emita cada marcador UMA ÚNICA VEZ por visitante
