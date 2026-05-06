@@ -256,6 +256,19 @@ async function handleLider(phone, text, liderInfo) {
       mensagem = mensagem.replace(CONVIDAR_RE, '').trimStart();
     }
 
+    // Processa #ESPERANDO_RETORNO
+    const mEsperando = response.match(ESPERANDO_RE);
+    if (mEsperando) {
+      try {
+        const { id } = JSON.parse(mEsperando[1]);
+        await atualizarStatusVisitante(id, { visitante_status: 'esperando retorno' });
+        log(phone, `Visitante ID ${id} → esperando retorno`);
+      } catch (err) {
+        log(phone, `Erro ao atualizar #ESPERANDO_RETORNO: ${err.message}`);
+      }
+      mensagem = mensagem.replace(ESPERANDO_RE, '').trimStart();
+    }
+
     // Processa #PARTICIPOU
     const mParticipou = response.match(PARTICIPOU_RE);
     if (mParticipou) {
