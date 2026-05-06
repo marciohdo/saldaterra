@@ -144,21 +144,24 @@ async function buscarVisitante(telefone, nome) {
 
 // Verifica se o telefone pertence a um líder (LISTA_PGS ou LISTA_ACIONAMENTOS)
 async function verificarLider(telefone) {
-  // Números WhatsApp chegam como "5534xxxxxxxx"; banco pode armazenar sem "55" e/ou sem o 9 após DDD
+  // Números WhatsApp chegam como "5534xxxxxxxx"; banco pode armazenar sem "55" e/ou sem/com o 9 após DDD
   const telNorm = telefone.startsWith('55') ? telefone.slice(2) : telefone;
-  // Variante sem o 9 após o DDD (ex: 34998258133 → 3498258133)
+  // Variante sem o 9 (11 → 10 dígitos): 34998258133 → 3498258133
   const telSemNove = telNorm.length === 11 && telNorm[2] === '9'
     ? telNorm.slice(0, 2) + telNorm.slice(3)
     : null;
+  // Variante com o 9 (10 → 11 dígitos): 3498258133 → 34998258133
+  const telComNove = telNorm.length === 10
+    ? telNorm.slice(0, 2) + '9' + telNorm.slice(2)
+    : null;
 
-  const variantes = [
-    encodeURIComponent(telefone),                    // 5534998258133
-    encodeURIComponent(telNorm),                     // 34998258133
-    ...(telSemNove ? [
-      encodeURIComponent(telSemNove),                // 3498258133
-      encodeURIComponent('55' + telSemNove),         // 553498258133
-    ] : []),
-  ];
+  const set = new Set([
+    telefone,                                        // 5534998258133
+    telNorm,                                         // 34998258133
+    ...(telSemNove ? [telSemNove, '55' + telSemNove] : []),  // 3498258133, 553498258133
+    ...(telComNove ? [telComNove, '55' + telComNove] : []),  // 34998258133, 5534998258133
+  ]);
+  const variantes = [...set].map(encodeURIComponent);
   const orContato = variantes.map(v => `CONTATO.eq.${v}`).join(',');
 
   // Tenta LISTA_PGS — fonte autoritativa de líderes
