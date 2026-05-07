@@ -240,11 +240,10 @@ async function handleLider(phone, text, liderInfo) {
     const response = await reply(phone, text, systemPrompt);
     let mensagem   = response;
 
-    // Processa #CONVIDAR
-    const mConvidar = response.match(CONVIDAR_RE);
-    if (mConvidar) {
+    // Processa #CONVIDAR (múltiplos)
+    for (const m of [...response.matchAll(CONVIDAR_RE)]) {
       try {
-        const { id } = JSON.parse(mConvidar[1]);
+        const { id } = JSON.parse(m[1]);
         await atualizarStatusVisitante(id, {
           visitante_status:   'convidado',
           visitante_data_ini: new Date().toISOString(),
@@ -253,27 +252,25 @@ async function handleLider(phone, text, liderInfo) {
       } catch (err) {
         log(phone, `Erro ao atualizar #CONVIDAR: ${err.message}`);
       }
-      mensagem = mensagem.replace(CONVIDAR_RE, '').trimStart();
     }
+    mensagem = mensagem.replace(CONVIDAR_RE, '').trimStart();
 
-    // Processa #ESPERANDO_RETORNO
-    const mEsperando = response.match(ESPERANDO_RE);
-    if (mEsperando) {
+    // Processa #ESPERANDO_RETORNO (múltiplos)
+    for (const m of [...response.matchAll(ESPERANDO_RE)]) {
       try {
-        const { id } = JSON.parse(mEsperando[1]);
+        const { id } = JSON.parse(m[1]);
         await atualizarStatusVisitante(id, { visitante_status: 'esperando retorno' });
         log(phone, `Visitante ID ${id} → esperando retorno`);
       } catch (err) {
         log(phone, `Erro ao atualizar #ESPERANDO_RETORNO: ${err.message}`);
       }
-      mensagem = mensagem.replace(ESPERANDO_RE, '').trimStart();
     }
+    mensagem = mensagem.replace(ESPERANDO_RE, '').trimStart();
 
-    // Processa #PARTICIPOU
-    const mParticipou = response.match(PARTICIPOU_RE);
-    if (mParticipou) {
+    // Processa #PARTICIPOU (múltiplos)
+    for (const m of [...response.matchAll(PARTICIPOU_RE)]) {
       try {
-        const { id } = JSON.parse(mParticipou[1]);
+        const { id } = JSON.parse(m[1]);
         await atualizarStatusVisitante(id, {
           visitante_status:   'frequentando',
           visitante_data_fim: new Date().toISOString(),
@@ -282,21 +279,19 @@ async function handleLider(phone, text, liderInfo) {
       } catch (err) {
         log(phone, `Erro ao atualizar #PARTICIPOU: ${err.message}`);
       }
-      mensagem = mensagem.replace(PARTICIPOU_RE, '').trimStart();
     }
+    mensagem = mensagem.replace(PARTICIPOU_RE, '').trimStart();
 
-    // Processa #NAO_ATENDE — redireciona visitante para novo PG
-    const mNaoAtende = response.match(NAO_ATENDE_RE);
-    if (mNaoAtende) {
+    // Processa #NAO_ATENDE — redireciona visitante para novo PG (múltiplos)
+    for (const m of [...response.matchAll(NAO_ATENDE_RE)]) {
       try {
-        const { id, motivo } = JSON.parse(mNaoAtende[1]);
+        const { id, motivo } = JSON.parse(m[1]);
         const v = await buscarVisitantePorId(id);
         if (v) {
           const statusAtual = motivo === 'lotado' ? 'lotado' : 'não atende';
           await atualizarStatusVisitante(id, { visitante_status: statusAtual });
           log(phone, `Visitante ID ${id} → ${statusAtual} (motivo: ${motivo})`);
 
-          // Redireciona em loop até conseguir notificar um líder
           await redirecionarVisitante(id, {
             nome:       v.visitante_nome,
             telefone:   v.visitante_telefone,
@@ -308,16 +303,18 @@ async function handleLider(phone, text, liderInfo) {
             cidade:     v.visitante_cidade,
           }, phone);
 
-          mensagem =
+          const confirmacao =
             `Tudo certo, líder ${liderInfo.nome}! 😊 Encontrei um novo PG para ${v.visitante_nome}.\n` +
             `Ele(a) foi encaminhado(a) para outro líder que já foi avisado. Muito obrigado pelo retorno! 🙏`;
+          await sendTyping(phone);
+          await sendText(phone, confirmacao);
         }
       } catch (err) {
         log(phone, `Erro ao processar #NAO_ATENDE: ${err.message}`);
         console.error(err);
       }
-      mensagem = mensagem.replace(NAO_ATENDE_RE, '').trimStart();
     }
+    mensagem = mensagem.replace(NAO_ATENDE_RE, '').trimStart();
 
     if (mensagem) {
       await sendTyping(phone);
