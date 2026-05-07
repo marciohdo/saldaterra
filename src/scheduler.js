@@ -3,7 +3,7 @@ const {
   buscarVisitantesSemContato,
   buscarVisitantePorId,
 } = require('./supabase');
-const { sendTextComFallback } = require('./evolution-api');
+const { sendTextComFallback, sendListComFallback } = require('./evolution-api');
 const { redirecionarVisitante } = require('./redirecionamento');
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // verifica a cada 1 hora

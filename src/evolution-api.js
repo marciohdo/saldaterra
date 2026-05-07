@@ -148,4 +148,4 @@ async function markAsRead(remoteJid, messageId) {
   }
 }
 
-module.exports = { sendText, sendTyping, markAsRead, sendTextComFallback };
+module.exports = { sendText, sendTyping, markAsRead, sendTextComFallback, sendList, sendListComFallback };
