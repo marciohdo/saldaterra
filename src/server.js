@@ -245,6 +245,70 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
   await handleVisitante(phone, text);
 });
 
+// ── Handler: resposta de lista interativa ────────────────────────────────────
+async function handleListResponse(phone, rowId, liderInfo) {
+  try {
+    const [acao, idStr] = rowId.split(':');
+    const id = parseInt(idStr, 10);
+    if (!acao || !id) { log(phone, `rowId inválido: "${rowId}"`); return; }
+
+    const v = await buscarVisitantePorId(id);
+    if (!v) { log(phone, `handleListResponse: visitante ID ${id} não encontrado`); return; }
+
+    switch (acao) {
+      case 'esperando': {
+        await atualizarStatusVisitante(id, { visitante_status: 'esperando retorno' });
+        log(phone, `Visitante ID ${id} → esperando retorno (lista)`);
+        await sendTyping(phone);
+        await sendText(phone, `Combinado! ✅ Registrei que ${v.visitante_nome} ainda não respondeu. Me avisa quando tiver novidades! 😊`);
+        break;
+      }
+      case 'nao_atende': {
+        await atualizarStatusVisitante(id, { visitante_status: 'não atende' });
+        log(phone, `Visitante ID ${id} → não atende (lista)`);
+        await redirecionarVisitante(id, {
+          nome:        v.visitante_nome,
+          telefone:    v.visitante_telefone,
+          idade:       v.visitante_idade,
+          estadoCivil: v.vistitante_est_civil,
+          criancas:    v.visitante_criancas,
+          endereco:    v.visitante_endereco,
+          bairro:      v.visitante_bairro,
+          cidade:      v.visitante_cidade,
+        }, phone);
+        await sendTyping(phone);
+        await sendText(phone, `Entendido! ✅ ${v.visitante_nome} foi encaminhado para outro PG. Muito obrigado pelo retorno, líder ${liderInfo.nome}! 🙏`);
+        break;
+      }
+      case 'convidado': {
+        await atualizarStatusVisitante(id, {
+          visitante_status:   'convidado',
+          visitante_data_ini: new Date().toISOString(),
+        });
+        log(phone, `Visitante ID ${id} → convidado (lista)`);
+        await sendTyping(phone);
+        await sendText(phone, `Que ótima notícia! 🎉 Registrei que ${v.visitante_nome} foi convidado. Que Deus prepare o coração dele(a)! 🙏`);
+        break;
+      }
+      case 'frequentando': {
+        await atualizarStatusVisitante(id, {
+          visitante_status:   'frequentando',
+          visitante_data_fim: new Date().toISOString(),
+        });
+        log(phone, `Visitante ID ${id} → frequentando (lista)`);
+        await sendTyping(phone);
+        await sendText(phone, `Aleluia! 🙌 Que alegria saber que ${v.visitante_nome} está frequentando o PG! Deus abençoe essa jornada! 🙏`);
+        break;
+      }
+      default:
+        log(phone, `handleListResponse: ação desconhecida "${acao}"`);
+    }
+  } catch (err) {
+    log(phone, `Erro ao processar resposta de lista: ${err.message}`);
+    console.error(err);
+  }
+}
+
 // ── Handler: líder ────────────────────────────────────────────────────────────
 async function handleLider(phone, text, liderInfo) {
   try {
