@@ -102,6 +102,37 @@ async function sendTextComFallback(telefone, text) {
   throw e;
 }
 
+async function sendList(number, listData) {
+  const url = `${BASE_URL}/message/sendList/${INSTANCE}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: HEADERS,
+    body: JSON.stringify({ number, ...listData }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Evolution API ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+async function sendListComFallback(telefone, listData) {
+  const candidatos = gerarCandidatos(telefone);
+  let ultimoErro;
+  for (const numero of candidatos) {
+    try {
+      await sendList(numero, listData);
+      return numero;
+    } catch (err) {
+      ultimoErro = err;
+      if (!err.message.includes('Evolution API 400:')) throw err;
+    }
+  }
+  const e = new Error(ultimoErro?.message ?? 'numero inexistente');
+  e.type = 'numero_inexistente';
+  throw e;
+}
+
 async function markAsRead(remoteJid, messageId) {
   const url = `${BASE_URL}/chat/markMessageAsRead/${INSTANCE}`;
   try {
