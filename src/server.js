@@ -57,6 +57,10 @@ function extractText(data) {
   );
 }
 
+function extractListResponse(data) {
+  return data?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ?? null;
+}
+
 function isVoiceMessage(data) {
   return !!(data?.message?.audioMessage || data?.message?.pttMessage);
 }
