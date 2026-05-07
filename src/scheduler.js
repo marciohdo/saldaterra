@@ -76,18 +76,34 @@ async function dispararLembretes() {
     log(`${visitantes.length} visitante(s) pendente(s) de dias anteriores em ${lideres.length} líder(es).`);
 
     for (const lider of lideres) {
-      const lista = lider.visitantes
-        .map(v => `- ${v.visitante_nome} (cadastrado em ${v.visitante_data_contato})`)
-        .join('\n');
-
-      const msg =
-        `Oi líder ${lider.nome}! 😊 Passando para lembrar que você tem visitante(s) aguardando o seu contato:\n\n` +
-        `${lista}\n\n` +
-        `Que tal dar uma ligadinha ou mandar uma mensagem para eles hoje? Deus abençoe! 🙏`;
-
       try {
-        const enviado = await sendTextComFallback(lider.telefone, msg);
-        log(`Lembrete enviado para líder ${lider.nome} (${enviado}) — ${lider.visitantes.length} visitante(s)`);
+        // Saudação inicial
+        const saudacao =
+          `Oi líder ${lider.nome}! 😊 Passando para lembrar que você tem visitante(s) aguardando.\n` +
+          `Para cada um, é só selecionar o status abaixo 👇`;
+        await sendTextComFallback(lider.telefone, saudacao);
+
+        // Uma lista interativa por visitante
+        for (const v of lider.visitantes) {
+          const listData = {
+            title: `Visitante: ${v.visitante_nome}`,
+            description: `Cadastrado em ${v.visitante_data_contato ?? '—'}. Qual é a situação?`,
+            buttonText: 'Atualizar status',
+            footerText: 'Igreja Sal da Terra',
+            sections: [{
+              title: 'Selecione uma opção:',
+              rows: [
+                { title: 'Não respondeu ainda',  description: 'Aguardando retorno do visitante', rowId: `esperando:${v.id}` },
+                { title: 'Perfil não atende',    description: 'Distância ou perfil inadequado',  rowId: `nao_atende:${v.id}` },
+                { title: 'Convidei para o PG',   description: 'Visitante foi convidado',         rowId: `convidado:${v.id}` },
+                { title: 'Está frequentando',    description: 'Visitante já participa do PG',    rowId: `frequentando:${v.id}` },
+              ],
+            }],
+          };
+          await sendListComFallback(lider.telefone, listData);
+        }
+
+        log(`Lembrete enviado para líder ${lider.nome} (${lider.telefone}) — ${lider.visitantes.length} visitante(s)`);
       } catch (err) {
         log(`Erro ao notificar líder ${lider.nome}: ${err.message}`);
         if (err.type === 'numero_inexistente') {
