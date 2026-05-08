@@ -59,6 +59,12 @@ function extractText(data) {
 }
 
 function extractButtonResponse(data) {
+  // Resposta de botão reply (nativeFlowMessage/quick_reply)
+  const nativeParams = data?.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson;
+  if (nativeParams) {
+    try { return JSON.parse(nativeParams)?.id ?? null; } catch { /* ignora */ }
+  }
+  // Resposta de botão clássico
   return (
     data?.message?.buttonsResponseMessage?.selectedButtonId ??
     data?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ??
