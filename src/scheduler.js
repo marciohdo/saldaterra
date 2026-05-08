@@ -4,6 +4,7 @@ const {
   buscarVisitantePorId,
 } = require('./supabase');
 const { sendTextComFallback, sendPollComFallback } = require('./evolution-api');
+const { registerPollVisitante } = require('./poll-map');
 const { redirecionarVisitante } = require('./redirecionamento');
 const { logMensagemLider } = require('./msg-logger');
 
