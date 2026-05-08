@@ -3,7 +3,7 @@ const {
   buscarVisitantesSemContato,
   buscarVisitantePorId,
 } = require('./supabase');
-const { sendTextComFallback, sendButtonsComFallback } = require('./evolution-api');
+const { sendTextComFallback, sendPollComFallback } = require('./evolution-api');
 const { redirecionarVisitante } = require('./redirecionamento');
 const { logMensagemLider } = require('./msg-logger');
 
