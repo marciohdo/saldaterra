@@ -1,5 +1,5 @@
 require('../load-env');
-const { sendTextComFallback, sendListComFallback } = require('../evolution-api');
+const { sendTextComFallback, sendPollComFallback } = require('../evolution-api');
 
 const NUMERO = '5534996689999';
 
