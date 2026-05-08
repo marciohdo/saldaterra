@@ -84,31 +84,37 @@ async function dispararLembretes() {
           `Para cada um, é só selecionar o status abaixo 👇`;
         await sendTextComFallback(lider.telefone, saudacao);
 
-        // Uma lista interativa por visitante
+        // Botões interativos por visitante (2 mensagens: 3 + 1 botão)
         for (const v of lider.visitantes) {
-          const listData = {
-            title: `Visitante: ${v.visitante_nome}`,
-            description: `Cadastrado em ${v.visitante_data_contato ?? '—'}. Qual é a situação?`,
-            buttonText: 'Atualizar status',
-            footerText: 'Igreja Sal da Terra',
-            sections: [{
-              title: 'Selecione uma opção:',
-              rows: [
-                { title: 'Não respondeu ainda',  description: 'Aguardando retorno do visitante', rowId: `esperando:${v.id}` },
-                { title: 'Perfil não atende',    description: 'Distância ou perfil inadequado',  rowId: `nao_atende:${v.id}` },
-                { title: 'Convidei para o PG',   description: 'Visitante foi convidado',         rowId: `convidado:${v.id}` },
-                { title: 'Está frequentando',    description: 'Visitante já participa do PG',    rowId: `frequentando:${v.id}` },
-              ],
-            }],
-          };
-            await sendListComFallback(lider.telefone, listData);
+          const descricao = `Cadastrado em ${v.visitante_data_contato ?? '—'}. Qual é a situação?`;
+
+          await sendButtonsComFallback(lider.telefone, {
+            title:       `Visitante: ${v.visitante_nome}`,
+            description: descricao,
+            footer:      'Igreja Sal da Terra',
+            buttons: [
+              { buttonId: `esperando:${v.id}`,    buttonText: { displayText: '⏳ Não respondeu ainda' }, type: 'reply' },
+              { buttonId: `convidado:${v.id}`,    buttonText: { displayText: '📩 Convidei para o PG'  }, type: 'reply' },
+              { buttonId: `frequentando:${v.id}`, buttonText: { displayText: '✅ Está frequentando'   }, type: 'reply' },
+            ],
+          });
+
+          await sendButtonsComFallback(lider.telefone, {
+            title:       `Visitante: ${v.visitante_nome}`,
+            description: 'Se o visitante não se encaixa no seu PG:',
+            footer:      'Igreja Sal da Terra',
+            buttons: [
+              { buttonId: `nao_atende:${v.id}`, buttonText: { displayText: '🚫 Perfil não atende' }, type: 'reply' },
+            ],
+          });
+
           logMensagemLider({
-            liderNome:      lider.nome,
-            liderTelefone:  lider.telefone,
-            tipo:           'lembrete',
-            visitanteNome:  v.visitante_nome,
-            visitanteId:    v.id,
-            mensagem:       listData.description,
+            liderNome:     lider.nome,
+            liderTelefone: lider.telefone,
+            tipo:          'lembrete',
+            visitanteNome: v.visitante_nome,
+            visitanteId:   v.id,
+            mensagem:      descricao,
           });
         }
 

@@ -58,8 +58,12 @@ function extractText(data) {
   );
 }
 
-function extractListResponse(data) {
-  return data?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ?? null;
+function extractButtonResponse(data) {
+  return (
+    data?.message?.buttonsResponseMessage?.selectedButtonId ??
+    data?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ??
+    null
+  );
 }
 
 function isVoiceMessage(data) {
