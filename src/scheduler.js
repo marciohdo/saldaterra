@@ -101,7 +101,15 @@ async function dispararLembretes() {
               ],
             }],
           };
-          await sendListComFallback(lider.telefone, listData);
+            await sendListComFallback(lider.telefone, listData);
+          logMensagemLider({
+            liderNome:      lider.nome,
+            liderTelefone:  lider.telefone,
+            tipo:           'lembrete',
+            visitanteNome:  v.visitante_nome,
+            visitanteId:    v.id,
+            mensagem:       listData.description,
+          });
         }
 
         log(`Lembrete enviado para líder ${lider.nome} (${lider.telefone}) — ${lider.visitantes.length} visitante(s)`);
