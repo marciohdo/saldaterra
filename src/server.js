@@ -411,6 +411,12 @@ async function handleLider(phone, text, liderInfo) {
       await sendTyping(phone);
       await sendText(phone, mensagem);
       log(phone, 'Resposta enviada ao líder');
+      logMensagemLider({
+        liderNome:     liderInfo.nome,
+        liderTelefone: phone,
+        tipo:          'resposta_bot',
+        mensagem,
+      });
     }
   } catch (err) {
     log(phone, `ERRO (líder): ${err.message}`);
