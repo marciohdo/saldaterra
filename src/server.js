@@ -194,11 +194,11 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
     return;
   }
 
-  // ── Resposta de lista interativa (líder clicou em opção) ─────────────────
-  const rowId = extractListResponse(data);
+  // ── Resposta de botão/lista interativa (líder clicou em opção) ──────────
+  const rowId = extractButtonResponse(data);
   if (rowId) {
     markAsRead(remoteJid, messageId);
-    log(phone, `Resposta de lista recebida: "${rowId}"`);
+    log(phone, `Resposta de botão recebida: "${rowId}"`);
     const liderInfoLista = await getLiderInfo(phone);
     if (liderInfoLista) {
       await handleListResponse(phone, rowId, liderInfoLista);
