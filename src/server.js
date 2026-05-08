@@ -214,6 +214,24 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
     return;
   }
 
+  // ── Resposta de enquete (poll) ────────────────────────────────────────────
+  const pollResp = extractPollResponse(data);
+  if (pollResp) {
+    markAsRead(remoteJid, messageId);
+    log(phone, `Resposta de poll recebida: "${pollResp.selected}" (pollId: ${pollResp.pollMsgId})`);
+    const visitanteId = getVisitanteByPoll(pollResp.pollMsgId);
+    if (visitanteId) {
+      const acao = OPCAO_PARA_ACAO[pollResp.selected];
+      if (acao) {
+        const liderInfoPoll = await getLiderInfo(phone);
+        if (liderInfoPoll) {
+          await handleListResponse(phone, `${acao}:${visitanteId}`, liderInfoPoll);
+        }
+      }
+    }
+    return;
+  }
+
   // ── Resposta de botão/lista interativa (líder clicou em opção) ──────────
   const rowId = extractButtonResponse(data);
   if (rowId) {
