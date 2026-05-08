@@ -60,18 +60,31 @@ function extractText(data) {
 }
 
 function extractButtonResponse(data) {
-  // Resposta de botão reply (nativeFlowMessage/quick_reply)
   const nativeParams = data?.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson;
   if (nativeParams) {
     try { return JSON.parse(nativeParams)?.id ?? null; } catch { /* ignora */ }
   }
-  // Resposta de botão clássico
   return (
     data?.message?.buttonsResponseMessage?.selectedButtonId ??
     data?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ??
     null
   );
 }
+
+function extractPollResponse(data) {
+  const poll = data?.message?.pollUpdateMessage;
+  if (!poll) return null;
+  const pollMsgId  = poll.pollCreationMessageKey?.id;
+  const selected   = poll.vote?.selectedOptions?.[0]?.optionName ?? '';
+  return pollMsgId ? { pollMsgId, selected } : null;
+}
+
+const OPCAO_PARA_ACAO = {
+  '⏳ Não respondeu ainda': 'esperando',
+  '📩 Convidei para o PG':  'convidado',
+  '✅ Está frequentando':   'frequentando',
+  '🚫 Perfil não atende':   'nao_atende',
+};
 
 function isVoiceMessage(data) {
   return !!(data?.message?.audioMessage || data?.message?.pttMessage);
