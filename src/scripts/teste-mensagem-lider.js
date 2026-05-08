@@ -21,41 +21,13 @@ async function main() {
   const INSTANCE = process.env.EVOLUTION_INSTANCE;
   const API_KEY  = process.env.EVOLUTION_API_KEY;
 
-  // 2. Botões com formato correto: { type, displayText, id }
-  const resBtn = await fetch(`${BASE_URL}/message/sendButtons/${INSTANCE}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: API_KEY },
-    body: JSON.stringify({
-      number:      NUMERO,
-      title:       `Visitante: ${VISITANTE.nome}`,
-      description: `Cadastrado em ${VISITANTE.data}. Qual é a situação?`,
-      footer:      'Igreja Sal da Terra',
-      buttons: [
-        { type: 'reply', displayText: '⏳ Não respondeu ainda', id: `esperando:${VISITANTE.id}`    },
-        { type: 'reply', displayText: '📩 Convidei para o PG',  id: `convidado:${VISITANTE.id}`    },
-        { type: 'reply', displayText: '✅ Está frequentando',   id: `frequentando:${VISITANTE.id}` },
-      ],
-    }),
+  // 2. Enquete com as 4 opções
+  const result = await sendPollComFallback(NUMERO, {
+    name:            `${VISITANTE.nome} — Cadastrado em ${VISITANTE.data}. Qual é a situação?`,
+    values:          ['⏳ Não respondeu ainda', '📩 Convidei para o PG', '✅ Está frequentando', '🚫 Perfil não atende'],
+    selectableCount: 1,
   });
-  const bodyBtn = await resBtn.text();
-  console.log(`Botões — status ${resBtn.status}: ${bodyBtn.slice(0, 150)}`);
-
-  // 3. Botão de perfil separado
-  const resBtn2 = await fetch(`${BASE_URL}/message/sendButtons/${INSTANCE}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: API_KEY },
-    body: JSON.stringify({
-      number:      NUMERO,
-      title:       `Visitante: ${VISITANTE.nome}`,
-      description: 'Se o visitante não se encaixa no seu PG:',
-      footer:      'Igreja Sal da Terra',
-      buttons: [
-        { type: 'reply', displayText: '🚫 Perfil não atende', id: `nao_atende:${VISITANTE.id}` },
-      ],
-    }),
-  });
-  const bodyBtn2 = await resBtn2.text();
-  console.log(`Botão perfil — status ${resBtn2.status}: ${bodyBtn2.slice(0, 150)}`);
+  console.log(`✓ Enquete enviada — pollId: ${result?.messageId}`);
 }
 
 main().catch(err => { console.error('Erro:', err.message); process.exit(1); });
