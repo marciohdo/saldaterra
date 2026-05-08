@@ -102,12 +102,12 @@ async function sendTextComFallback(telefone, text) {
   throw e;
 }
 
-async function sendButtons(number, buttonsData) {
-  const url = `${BASE_URL}/message/sendButtons/${INSTANCE}`;
+async function sendPoll(number, { name, values, selectableCount = 1 }) {
+  const url = `${BASE_URL}/message/sendPoll/${INSTANCE}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: HEADERS,
-    body: JSON.stringify({ number, ...buttonsData }),
+    body: JSON.stringify({ number, name, values, selectableCount }),
   });
   if (!res.ok) {
     const body = await res.text();
@@ -116,13 +116,13 @@ async function sendButtons(number, buttonsData) {
   return res.json();
 }
 
-async function sendButtonsComFallback(telefone, buttonsData) {
+async function sendPollComFallback(telefone, pollData) {
   const candidatos = gerarCandidatos(telefone);
   let ultimoErro;
   for (const numero of candidatos) {
     try {
-      await sendButtons(numero, buttonsData);
-      return numero;
+      const result = await sendPoll(numero, pollData);
+      return { numero, messageId: result?.key?.id };
     } catch (err) {
       ultimoErro = err;
       if (!err.message.includes('Evolution API 400:')) throw err;
@@ -148,4 +148,4 @@ async function markAsRead(remoteJid, messageId) {
   }
 }
 
-module.exports = { sendText, sendTyping, markAsRead, sendTextComFallback, sendButtons, sendButtonsComFallback };
+module.exports = { sendText, sendTyping, markAsRead, sendTextComFallback, sendPoll, sendPollComFallback };
