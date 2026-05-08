@@ -93,9 +93,9 @@ async function dispararLembretes() {
             description: descricao,
             footer:      'Igreja Sal da Terra',
             buttons: [
-              { buttonId: `esperando:${v.id}`,    buttonText: { displayText: '⏳ Não respondeu ainda' }, type: 'reply' },
-              { buttonId: `convidado:${v.id}`,    buttonText: { displayText: '📩 Convidei para o PG'  }, type: 'reply' },
-              { buttonId: `frequentando:${v.id}`, buttonText: { displayText: '✅ Está frequentando'   }, type: 'reply' },
+              { type: 'reply', displayText: '⏳ Não respondeu ainda', id: `esperando:${v.id}`    },
+              { type: 'reply', displayText: '📩 Convidei para o PG',  id: `convidado:${v.id}`    },
+              { type: 'reply', displayText: '✅ Está frequentando',   id: `frequentando:${v.id}` },
             ],
           });
 
@@ -104,7 +104,7 @@ async function dispararLembretes() {
             description: 'Se o visitante não se encaixa no seu PG:',
             footer:      'Igreja Sal da Terra',
             buttons: [
-              { buttonId: `nao_atende:${v.id}`, buttonText: { displayText: '🚫 Perfil não atende' }, type: 'reply' },
+              { type: 'reply', displayText: '🚫 Perfil não atende', id: `nao_atende:${v.id}` },
             ],
           });
 
