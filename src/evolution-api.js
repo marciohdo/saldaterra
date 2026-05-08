@@ -102,12 +102,12 @@ async function sendTextComFallback(telefone, text) {
   throw e;
 }
 
-async function sendList(number, listData) {
-  const url = `${BASE_URL}/message/sendList/${INSTANCE}`;
+async function sendButtons(number, buttonsData) {
+  const url = `${BASE_URL}/message/sendButtons/${INSTANCE}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: HEADERS,
-    body: JSON.stringify({ number, ...listData }),
+    body: JSON.stringify({ number, ...buttonsData }),
   });
   if (!res.ok) {
     const body = await res.text();
@@ -116,12 +116,12 @@ async function sendList(number, listData) {
   return res.json();
 }
 
-async function sendListComFallback(telefone, listData) {
+async function sendButtonsComFallback(telefone, buttonsData) {
   const candidatos = gerarCandidatos(telefone);
   let ultimoErro;
   for (const numero of candidatos) {
     try {
-      await sendList(numero, listData);
+      await sendButtons(numero, buttonsData);
       return numero;
     } catch (err) {
       ultimoErro = err;
@@ -148,4 +148,4 @@ async function markAsRead(remoteJid, messageId) {
   }
 }
 
-module.exports = { sendText, sendTyping, markAsRead, sendTextComFallback, sendList, sendListComFallback };
+module.exports = { sendText, sendTyping, markAsRead, sendTextComFallback, sendButtons, sendButtonsComFallback };
