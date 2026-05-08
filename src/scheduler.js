@@ -5,6 +5,7 @@ const {
 } = require('./supabase');
 const { sendTextComFallback, sendListComFallback } = require('./evolution-api');
 const { redirecionarVisitante } = require('./redirecionamento');
+const { logMensagemLider } = require('./msg-logger');
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // verifica a cada 1 hora
 
