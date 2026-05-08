@@ -256,12 +256,12 @@ async function handleListResponse(phone, rowId, liderInfo) {
     const v = await buscarVisitantePorId(id);
     if (!v) { log(phone, `handleListResponse: visitante ID ${id} não encontrado`); return; }
 
+    let confirmacao;
     switch (acao) {
       case 'esperando': {
         await atualizarStatusVisitante(id, { visitante_status: 'esperando retorno' });
         log(phone, `Visitante ID ${id} → esperando retorno (lista)`);
-        await sendTyping(phone);
-        await sendText(phone, `Combinado! ✅ Registrei que ${v.visitante_nome} ainda não respondeu. Me avisa quando tiver novidades! 😊`);
+        confirmacao = `Combinado! ✅ Registrei que ${v.visitante_nome} ainda não respondeu. Me avisa quando tiver novidades! 😊`;
         break;
       }
       case 'nao_atende': {
@@ -277,8 +277,7 @@ async function handleListResponse(phone, rowId, liderInfo) {
           bairro:      v.visitante_bairro,
           cidade:      v.visitante_cidade,
         }, phone);
-        await sendTyping(phone);
-        await sendText(phone, `Entendido! ✅ ${v.visitante_nome} foi encaminhado para outro PG. Muito obrigado pelo retorno, líder ${liderInfo.nome}! 🙏`);
+        confirmacao = `Entendido! ✅ ${v.visitante_nome} foi encaminhado para outro PG. Muito obrigado pelo retorno, líder ${liderInfo.nome}! 🙏`;
         break;
       }
       case 'convidado': {
@@ -287,8 +286,7 @@ async function handleListResponse(phone, rowId, liderInfo) {
           visitante_data_ini: new Date().toISOString(),
         });
         log(phone, `Visitante ID ${id} → convidado (lista)`);
-        await sendTyping(phone);
-        await sendText(phone, `Que ótima notícia! 🎉 Registrei que ${v.visitante_nome} foi convidado. Que Deus prepare o coração dele(a)! 🙏`);
+        confirmacao = `Que ótima notícia! 🎉 Registrei que ${v.visitante_nome} foi convidado. Que Deus prepare o coração dele(a)! 🙏`;
         break;
       }
       case 'frequentando': {
@@ -297,12 +295,24 @@ async function handleListResponse(phone, rowId, liderInfo) {
           visitante_data_fim: new Date().toISOString(),
         });
         log(phone, `Visitante ID ${id} → frequentando (lista)`);
-        await sendTyping(phone);
-        await sendText(phone, `Aleluia! 🙌 Que alegria saber que ${v.visitante_nome} está frequentando o PG! Deus abençoe essa jornada! 🙏`);
+        confirmacao = `Aleluia! 🙌 Que alegria saber que ${v.visitante_nome} está frequentando o PG! Deus abençoe essa jornada! 🙏`;
         break;
       }
       default:
         log(phone, `handleListResponse: ação desconhecida "${acao}"`);
+    }
+
+    if (confirmacao) {
+      await sendTyping(phone);
+      await sendText(phone, confirmacao);
+      logMensagemLider({
+        liderNome:     liderInfo.nome,
+        liderTelefone: phone,
+        tipo:          `confirmacao_lista:${acao}`,
+        visitanteNome: v.visitante_nome,
+        visitanteId:   id,
+        mensagem:      confirmacao,
+      });
     }
   } catch (err) {
     log(phone, `Erro ao processar resposta de lista: ${err.message}`);
