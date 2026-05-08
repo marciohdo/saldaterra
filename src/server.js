@@ -19,6 +19,7 @@ const { SYSTEM_PROMPT: LUZ_IA } = require('./agents/luz-ia');
 const { buildSystemPrompt: buildPGPrompt } = require('./agents/pg-visitante');
 const { redirecionarVisitante } = require('./redirecionamento');
 const { logMensagemLider }  = require('./msg-logger');
+const { getVisitanteByPoll } = require('./poll-map');
 const scheduler             = require('./scheduler');
 
 const app = express();
