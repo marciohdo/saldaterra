@@ -30,9 +30,9 @@ async function main() {
       description: `Cadastrado em ${VISITANTE.data}. Qual é a situação?`,
       footer:      'Igreja Sal da Terra',
       buttons: [
-        { buttonId: `esperando:${VISITANTE.id}`,   buttonText: { displayText: '❌ Não respondeu ainda' }, type: 1 },
-        { buttonId: `convidado:${VISITANTE.id}`,   buttonText: { displayText: '📩 Convidei para o PG' },  type: 1 },
-        { buttonId: `frequentando:${VISITANTE.id}`,buttonText: { displayText: '✅ Está frequentando' },   type: 1 },
+        { buttonId: `esperando:${VISITANTE.id}`,   buttonText: { displayText: '❌ Não respondeu ainda' }, type: 'reply' },
+        { buttonId: `convidado:${VISITANTE.id}`,   buttonText: { displayText: '📩 Convidei para o PG' },  type: 'reply' },
+        { buttonId: `frequentando:${VISITANTE.id}`,buttonText: { displayText: '✅ Está frequentando' },   type: 'reply' },
       ],
     }),
   });
