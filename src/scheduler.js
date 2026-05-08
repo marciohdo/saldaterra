@@ -84,29 +84,24 @@ async function dispararLembretes() {
           `Para cada um, é só selecionar o status abaixo 👇`;
         await sendTextComFallback(lider.telefone, saudacao);
 
-        // Botões interativos por visitante (2 mensagens: 3 + 1 botão)
+        // Enquete por visitante (poll nativo do WhatsApp)
         for (const v of lider.visitantes) {
           const descricao = `Cadastrado em ${v.visitante_data_contato ?? '—'}. Qual é a situação?`;
-
-          await sendButtonsComFallback(lider.telefone, {
-            title:       `Visitante: ${v.visitante_nome}`,
-            description: descricao,
-            footer:      'Igreja Sal da Terra',
-            buttons: [
-              { type: 'reply', displayText: '⏳ Não respondeu ainda', id: `esperando:${v.id}`    },
-              { type: 'reply', displayText: '📩 Convidei para o PG',  id: `convidado:${v.id}`    },
-              { type: 'reply', displayText: '✅ Está frequentando',   id: `frequentando:${v.id}` },
+          const result = await sendPollComFallback(lider.telefone, {
+            name:   `${v.visitante_nome} — ${descricao}`,
+            values: [
+              '⏳ Não respondeu ainda',
+              '📩 Convidei para o PG',
+              '✅ Está frequentando',
+              '🚫 Perfil não atende',
             ],
+            selectableCount: 1,
           });
 
-          await sendButtonsComFallback(lider.telefone, {
-            title:       `Visitante: ${v.visitante_nome}`,
-            description: 'Se o visitante não se encaixa no seu PG:',
-            footer:      'Igreja Sal da Terra',
-            buttons: [
-              { type: 'reply', displayText: '🚫 Perfil não atende', id: `nao_atende:${v.id}` },
-            ],
-          });
+          // Registra mapeamento pollMessageId → visitanteId para o webhook processar
+          if (result?.messageId) {
+            registerPollVisitante(result.messageId, v.id);
+          }
 
           logMensagemLider({
             liderNome:     lider.nome,
