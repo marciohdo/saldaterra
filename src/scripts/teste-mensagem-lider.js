@@ -49,7 +49,7 @@ async function main() {
       description: 'Se o visitante não se encaixa no seu PG:',
       footer:      'Igreja Sal da Terra',
       buttons: [
-        { buttonId: `nao_atende:${VISITANTE.id}`, buttonText: { displayText: '🚫 Perfil não atende' }, type: 1 },
+        { buttonId: `nao_atende:${VISITANTE.id}`, buttonText: { displayText: '🚫 Perfil não atende' }, type: 'reply' },
       ],
     }),
   });
