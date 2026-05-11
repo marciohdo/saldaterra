@@ -341,6 +341,7 @@ module.exports = {
   buscarVisitantesDoLider,
   buscarVisitantesSemContato,
   atualizarStatusVisitante,
+  buscarVisitanteComPGAtivo,
   buscarRelatorioVisitantesSemRetorno,
   buscarRelatorioLideresAtendimentoParado,
 };
