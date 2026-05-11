@@ -7,14 +7,24 @@ const {
 
 const ADMINS_NORM = new Set(['34998096868', '34996689999', '34999931849']);
 
-function normalizarTel(tel) {
-  return tel.startsWith('55') ? tel.slice(2) : tel;
+function variantes(phone) {
+  const digits = phone.replace(/\D/g, '');
+  const local  = digits.startsWith('55') ? digits.slice(2) : digits; // sem código do país
+
+  const semNove = local.length === 11 && local[2] === '9'
+    ? local.slice(0, 2) + local.slice(3)   // 11 → 10 dígitos
+    : null;
+  const comNove = local.length === 10
+    ? local.slice(0, 2) + '9' + local.slice(2) // 10 → 11 dígitos
+    : null;
+
+  return [local, semNove, comNove].filter(Boolean);
 }
 
 function isAdmin(phone) {
-  const norm = normalizarTel(phone);
-  const result = ADMINS_NORM.has(norm);
-  console.log(`[admin] isAdmin: raw="${phone}" norm="${norm}" match=${result}`);
+  const vars   = variantes(phone);
+  const result = vars.some(v => ADMINS_NORM.has(v));
+  console.log(`[admin] isAdmin: raw="${phone}" variantes=[${vars.join(',')}] match=${result}`);
   return result;
 }
 
