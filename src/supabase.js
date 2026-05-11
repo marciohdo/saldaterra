@@ -269,6 +269,38 @@ async function buscarVisitantesSemContato() {
   return res.json();
 }
 
+// Relatório 1: todos os visitantes ativos/pendentes (sem retorno do líder)
+async function buscarRelatorioVisitantesSemRetorno() {
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
+    `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
+    `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_contato,lider,lider_telefone,Data_atu` +
+    `&order=visitante_data_contato.asc`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// Relatório 2: líderes agrupados com visitantes pendentes
+async function buscarRelatorioLideresAtendimentoParado() {
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
+    `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
+    `&lider_telefone=not.is.null` +
+    `&lider_telefone=neq.` +
+    `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_contato,Data_atu,lider,lider_telefone` +
+    `&order=lider.asc,visitante_data_contato.asc`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+
+  const mapa = new Map();
+  for (const r of rows) {
+    const key = r.lider_telefone;
+    if (!mapa.has(key)) mapa.set(key, { nome: r.lider ?? 'Sem nome', telefone: r.lider_telefone, visitantes: [] });
+    mapa.get(key).visitantes.push(r);
+  }
+  return [...mapa.values()];
+}
+
 // Atualiza campos de um visitante pelo id
 async function atualizarStatusVisitante(id, campos) {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS?id=eq.${id}`;
@@ -294,4 +326,6 @@ module.exports = {
   buscarVisitantesDoLider,
   buscarVisitantesSemContato,
   atualizarStatusVisitante,
+  buscarRelatorioVisitantesSemRetorno,
+  buscarRelatorioLideresAtendimentoParado,
 };

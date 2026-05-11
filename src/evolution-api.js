@@ -24,7 +24,7 @@ async function sendTyping(number) {
       body: JSON.stringify({ number, options: { presence: 'composing' } }),
     });
   } catch (_) {
-    // não bloqueia o envio se falhar
+    // n bloqueia o envio se falhar
   }
 }
 

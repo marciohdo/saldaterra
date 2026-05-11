@@ -20,6 +20,7 @@ const { buildSystemPrompt: buildPGPrompt } = require('./agents/pg-visitante');
 const { redirecionarVisitante } = require('./redirecionamento');
 const { logMensagemLider }  = require('./msg-logger');
 const { getVisitanteByPoll } = require('./poll-map');
+const { isAdmin, handleAdmin } = require('./admin');
 const scheduler             = require('./scheduler');
 
 const app = express();
@@ -254,6 +255,13 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
     log(phone, 'Tentativa de prompt injection bloqueada');
     await sendTyping(phone);
     await sendText(phone, 'Oi! 😊 Não consigo processar esse tipo de mensagem. Se quiser encontrar um Pequeno Grupo, é só me contar um pouquinho sobre você! 🙏');
+    return;
+  }
+
+  // ── Administrador ─────────────────────────────────────────────────────────
+  if (isAdmin(phone)) {
+    log(phone, 'Administrador identificado');
+    await handleAdmin(phone, text);
     return;
   }
 

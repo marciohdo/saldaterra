@@ -1,9 +1,10 @@
 # Inicia o servidor Node.js e o tunel Cloudflare juntos
+param([switch]$Watch)
 Set-Location $PSScriptRoot
 
-# Encerra processos anteriores de cloudflared e node para evitar conflitos
+# Encerra processos anteriores de cloudflared e node para evitar conflitos de porta
 Get-Process -Name "cloudflared" -ErrorAction SilentlyContinue | Stop-Process -Force
-Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process -Name "node"        -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 
 $logFile = "$env:TEMP\cloudflared-tunnel.log"
@@ -42,4 +43,8 @@ if ($url) {
 }
 
 Write-Host "Iniciando servidor Node.js na porta 3000..." -ForegroundColor Cyan
-node src/server.js
+if ($Watch) {
+    node --watch src/server.js
+} else {
+    node src/server.js
+}

@@ -4,9 +4,8 @@
   "description": "Agentes de IA da Igreja Sal da Terra via WhatsApp",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
-    "tunnel": "powershell -ExecutionPolicy Bypass -File start.ps1"
+    "start": "powershell -ExecutionPolicy Bypass -File start.ps1",
+    "dev": "powershell -ExecutionPolicy Bypass -File start.ps1 -Watch"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
