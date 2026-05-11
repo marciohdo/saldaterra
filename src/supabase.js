@@ -269,6 +269,21 @@ async function buscarVisitantesSemContato() {
   return res.json();
 }
 
+// Retorna o registro ativo mais recente de um visitante (status diferente dos terminais)
+// Usado para evitar duplo encaminhamento
+async function buscarVisitanteComPGAtivo(telefone) {
+  const tel = encodeURIComponent(telefone);
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
+    `?visitante_telefone=eq.${tel}` +
+    `&visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
+    `&select=id,visitante_nome,lider,lider_telefone,visitante_status` +
+    `&order=id.desc&limit=1`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  return rows[0] ?? null;
+}
+
 // Relatório 1: todos os visitantes ativos/pendentes (sem retorno do líder)
 async function buscarRelatorioVisitantesSemRetorno() {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
