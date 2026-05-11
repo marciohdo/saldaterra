@@ -12,7 +12,10 @@ function normalizarTel(tel) {
 }
 
 function isAdmin(phone) {
-  return ADMINS_NORM.has(normalizarTel(phone));
+  const norm = normalizarTel(phone);
+  const result = ADMINS_NORM.has(norm);
+  console.log(`[admin] isAdmin: raw="${phone}" norm="${norm}" match=${result}`);
+  return result;
 }
 
 function log(phone, msg) {
