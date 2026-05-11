@@ -5,6 +5,7 @@ const {
   buscarLideresAnteriores,
   inserirVisitante,
   atualizarStatusVisitante,
+  buscarVisitanteComPGAtivo,
 } = require('./supabase');
 const { sendTextComFallback } = require('./evolution-api');
 
@@ -73,6 +74,13 @@ async function redirecionarVisitante(idLinhaAtual, v, identificador) {
       if (!pg) {
         log(identificador, `Nenhum PG disponível na tentativa ${t + 1}`);
         if (totalJaTentados >= 3) await notificarSecretaria(v, totalJaTentados + 1);
+        return;
+      }
+
+      // Garante que não existe outro PG ativo para este visitante antes de inserir
+      const pgAtivo = await buscarVisitanteComPGAtivo(v.telefone);
+      if (pgAtivo) {
+        log(identificador, `Abortado: ${v.nome} já tem PG ativo (líder: ${pgAtivo.lider}, status: ${pgAtivo.visitante_status})`);
         return;
       }
 
