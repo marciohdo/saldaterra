@@ -1,4 +1,6 @@
 require('./load-env');
+const fs   = require('fs');
+const path = require('path');
 const {
   buscarVisitantesSemContato,
   buscarVisitantePorId,
@@ -9,14 +11,38 @@ const { redirecionarVisitante } = require('./redirecionamento');
 const { logMensagemLider } = require('./msg-logger');
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // verifica a cada 1 hora
+const LOG_DIR = path.join(__dirname, '..', 'logs');
 
-let ultimoEnvio = null; // data do último disparo — garante 1 envio por dia
+let ultimoEnvio = null; // cache em memória — evita ler o arquivo a cada hora
 
 function hoje() {
   return new Date().toLocaleDateString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric', month: '2-digit', day: '2-digit',
   });
+}
+
+// Retorna a data no formato YYYY-MM-DD (mesmo usado pelo msg-logger no nome do arquivo)
+function hojeISO() {
+  return new Date().toLocaleDateString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).split('/').reverse().join('-');
+}
+
+// Verifica no arquivo de log do dia se já houve um disparo de lembrete
+function jaEnviouHojeNoLog() {
+  try {
+    const arquivo = path.join(LOG_DIR, `lideres-${hojeISO()}.log`);
+    if (!fs.existsSync(arquivo)) return false;
+    const conteudo = fs.readFileSync(arquivo, 'utf8');
+    return conteudo.split('\n').some(linha => {
+      if (!linha.trim()) return false;
+      try { return JSON.parse(linha).tipo === 'lembrete'; } catch { return false; }
+    });
+  } catch {
+    return false;
+  }
 }
 
 function log(msg) {
@@ -132,9 +158,16 @@ async function dispararLembretes() {
 
 async function verificarEDisparar() {
   const dataHoje = hoje();
+  // Cache em memória para evitar leitura de arquivo a cada hora
   if (ultimoEnvio === dataHoje) return;
+  // Na inicialização (ou após restart), verifica o log do dia no disco
+  if (jaEnviouHojeNoLog()) {
+    log('Lembrete do dia já registrado no log — nenhum envio necessário.');
+    ultimoEnvio = dataHoje; // aquece o cache
+    return;
+  }
   await dispararLembretes();
-  ultimoEnvio = dataHoje; // só marca depois de completar (evita perder o dia se der erro)
+  ultimoEnvio = dataHoje; // marca só após completar
 }
 
 function iniciar() {
