@@ -130,15 +130,20 @@ async function dispararLembretes() {
   }
 }
 
+async function verificarEDisparar() {
+  const dataHoje = hoje();
+  if (ultimoEnvio === dataHoje) return;
+  await dispararLembretes();
+  ultimoEnvio = dataHoje; // só marca depois de completar (evita perder o dia se der erro)
+}
+
 function iniciar() {
   log('Agendador iniciado — lembretes diários para líderes com visitantes pendentes.');
 
-  setInterval(async () => {
-    const dataHoje = hoje();
-    if (ultimoEnvio === dataHoje) return; // já enviou hoje
-    ultimoEnvio = dataHoje;
-    await dispararLembretes();
-  }, CHECK_INTERVAL_MS);
+  // Verifica imediatamente na inicialização (evita perder o dia se o servidor reiniciou)
+  verificarEDisparar();
+
+  setInterval(verificarEDisparar, CHECK_INTERVAL_MS);
 }
 
 module.exports = { iniciar };
