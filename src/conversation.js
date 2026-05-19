@@ -35,7 +35,7 @@ function isSaved(phone) {
   return saved.has(phone);
 }
 
-// Retorna phones ativos que não responderam há mais de X milissegundos
+//  Retorna phones ativos que não responderam há mais de X milissegundos
 function getInactive(thresholdMs) {
   const now = Date.now();
   const inactive = [];
