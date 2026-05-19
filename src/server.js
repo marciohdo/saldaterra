@@ -1,6 +1,7 @@
 require('./load-env');
 const express = require('express');
-const { sendText, sendTyping, markAsRead, sendTextComFallback } = require('./evolution-api');
+const { sendText, sendTyping, markAsRead, sendTextComFallback } = require('./whatsapp');
+const { startWhatsApp } = require('./whatsapp-client');
 const { reply }             = require('./claude');
 const {
   inserirVisitante,
@@ -51,45 +52,12 @@ function telefoneDestino(telefoneReal) {
   return telefoneReal;
 }
 
-function extractText(data) {
-  return (
-    data?.message?.conversation ||
-    data?.message?.extendedTextMessage?.text ||
-    data?.message?.imageMessage?.caption ||
-    null
-  );
-}
-
-function extractButtonResponse(data) {
-  const nativeParams = data?.message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson;
-  if (nativeParams) {
-    try { return JSON.parse(nativeParams)?.id ?? null; } catch { /* ignora */ }
-  }
-  return (
-    data?.message?.buttonsResponseMessage?.selectedButtonId ??
-    data?.message?.listResponseMessage?.singleSelectReply?.selectedRowId ??
-    null
-  );
-}
-
-function extractPollResponse(data) {
-  const poll = data?.message?.pollUpdateMessage;
-  if (!poll) return null;
-  const pollMsgId  = poll.pollCreationMessageKey?.id;
-  const selected   = poll.vote?.selectedOptions?.[0]?.optionName ?? '';
-  return pollMsgId ? { pollMsgId, selected } : null;
-}
-
 const OPCAO_PARA_ACAO = {
   '⏳ Não respondeu ainda': 'esperando',
   '📩 Convidei para o PG':  'convidado',
   '✅ Está frequentando':   'frequentando',
   '🚫 Perfil não atende':   'nao_atende',
 };
-
-function isVoiceMessage(data) {
-  return !!(data?.message?.audioMessage || data?.message?.pttMessage);
-}
 
 const PROMPT_INJECTION_PATTERNS = [
   /ignore\s+(previous|todas?\s+as?\s+instru|suas?\s+instru|o\s+prompt)/i,
@@ -179,75 +147,29 @@ setInterval(async () => {
   }
 }, 30_000);
 
-app.use((req, _res, next) => {
-  console.log(`\n>>> ${req.method} ${req.path}`);
-  if (Object.keys(req.body ?? {}).length) {
-    console.log('BODY:', JSON.stringify(req.body, null, 2));
+// Detecta row IDs de listas interativas enviadas pelo bot (ex: "convidado:123")
+const ROW_ID_RE = /^(esperando|nao_atende|convidado|frequentando):\d+$/;
+
+async function handleIncomingVoice(phone, remoteJid, messageId) {
+  markAsRead(remoteJid, messageId);
+  log(phone, 'Mensagem de voz recebida — informando que não é suportado');
+  await sendTyping(phone);
+  await sendText(phone, 'Oi! 😊 Por enquanto não consigo ouvir mensagens de voz. Me manda um textinho que eu te ajudo rapidinho! 🙏');
+}
+
+async function handleIncomingPoll(phone, pollMsgId, selected) {
+  log(phone, `Resposta de poll recebida: "${selected}" (pollId: ${pollMsgId})`);
+  const visitanteId = getVisitanteByPoll(pollMsgId);
+  if (!visitanteId) return;
+  const acao = OPCAO_PARA_ACAO[selected];
+  if (!acao) return;
+  const liderInfo = await getLiderInfo(phone);
+  if (liderInfo) {
+    await handleListResponse(phone, `${acao}:${visitanteId}`, liderInfo);
   }
-  next();
-});
+}
 
-app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
-  res.sendStatus(200);
-
-  const body  = req.body ?? {};
-  const event = body.event ?? body.type;
-  const data  = body.data ?? body;
-
-  log(null, `Evento recebido: "${event}"`);
-
-  const isMessage = /messages[\.\-_]upsert/i.test(event ?? '');
-  if (!isMessage) return;
-  if (data?.key?.fromMe) return;
-
-  const remoteJid = data?.key?.remoteJid ?? '';
-  if (!remoteJid.includes('@')) return;
-  if (remoteJid.endsWith('@g.us')) return;
-
-  const phone     = remoteJid.replace(/@.*/, '');
-  const messageId = data?.key?.id;
-
-  if (isVoiceMessage(data)) {
-    markAsRead(remoteJid, messageId);
-    log(phone, 'Mensagem de voz recebida — informando que não é suportado');
-    await sendTyping(phone);
-    await sendText(phone, 'Oi! 😊 Por enquanto não consigo ouvir mensagens de voz. Me manda um textinho que eu te ajudo rapidinho! 🙏');
-    return;
-  }
-
-  // ── Resposta de enquete (poll) ────────────────────────────────────────────
-  const pollResp = extractPollResponse(data);
-  if (pollResp) {
-    markAsRead(remoteJid, messageId);
-    log(phone, `Resposta de poll recebida: "${pollResp.selected}" (pollId: ${pollResp.pollMsgId})`);
-    const visitanteId = getVisitanteByPoll(pollResp.pollMsgId);
-    if (visitanteId) {
-      const acao = OPCAO_PARA_ACAO[pollResp.selected];
-      if (acao) {
-        const liderInfoPoll = await getLiderInfo(phone);
-        if (liderInfoPoll) {
-          await handleListResponse(phone, `${acao}:${visitanteId}`, liderInfoPoll);
-        }
-      }
-    }
-    return;
-  }
-
-  // ── Resposta de botão/lista interativa (líder clicou em opção) ──────────
-  const rowId = extractButtonResponse(data);
-  if (rowId) {
-    markAsRead(remoteJid, messageId);
-    log(phone, `Resposta de botão recebida: "${rowId}"`);
-    const liderInfoLista = await getLiderInfo(phone);
-    if (liderInfoLista) {
-      await handleListResponse(phone, rowId, liderInfoLista);
-    }
-    return;
-  }
-
-  const text = extractText(data);
-  if (!text) return;
-
+async function handleIncomingMessage(phone, _pushName, text, remoteJid, messageId) {
   markAsRead(remoteJid, messageId);
   log(phone, `Mensagem recebida: "${text}"`);
 
@@ -258,23 +180,65 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
     return;
   }
 
-  // ── Administrador ─────────────────────────────────────────────────────────
   if (isAdmin(phone)) {
+    const cmd = text.trim();
+    // Comandos de relatório — exclusivos do admin
+    if (cmd === '1' || cmd === '2') {
+      log(phone, 'Administrador identificado — comando de relatório');
+      await handleAdmin(phone, text);
+      return;
+    }
+
+    // Verifica se também é líder para rotear corretamente
+    const liderInfoAdmin = await getLiderInfo(phone);
+
+    if (liderInfoAdmin) {
+      log(phone, `Admin+Líder identificado: ${liderInfoAdmin.nome}`);
+      // Resposta de lista interativa → fluxo de líder
+      if (ROW_ID_RE.test(cmd)) {
+        await handleListResponse(phone, cmd, liderInfoAdmin);
+        return;
+      }
+      // Demais mensagens → fluxo de líder
+      if (isPromptInjection(text)) {
+        log(phone, 'Tentativa de prompt injection bloqueada (admin+líder)');
+        await sendTyping(phone);
+        await sendText(phone, 'Não consigo processar esse tipo de mensagem. 🙏');
+        return;
+      }
+      await handleLider(phone, text, liderInfoAdmin);
+      return;
+    }
+
+    // Admin puro → menu de admin
     log(phone, 'Administrador identificado');
     await handleAdmin(phone, text);
     return;
   }
 
-  // ── Verificação de líder ──────────────────────────────────────────────────
-  const liderInfo = await getLiderInfo(phone);
+  // Resposta de botão/lista interativa (leader clicked a row)
+  if (ROW_ID_RE.test(text)) {
+    const liderInfoLista = await getLiderInfo(phone);
+    if (liderInfoLista) {
+      log(phone, `Resposta de botão recebida: "${text}"`);
+      await handleListResponse(phone, text, liderInfoLista);
+      return;
+    }
+  }
 
+  const liderInfo = await getLiderInfo(phone);
   if (liderInfo) {
     log(phone, `Líder identificado: ${liderInfo.nome} (${liderInfo.fonte})`);
+    if (isPromptInjection(text)) {
+      log(phone, 'Tentativa de prompt injection bloqueada (líder)');
+      await sendTyping(phone);
+      await sendText(phone, 'Não consigo processar esse tipo de mensagem. 🙏');
+      return;
+    }
     await handleLider(phone, text, liderInfo);
     return;
   }
 
-  // ── Fluxo de visitante ────────────────────────────────────────────────────
   // Na primeira mensagem da sessão, verifica se já tem cadastro
   if (!conversation.get(phone).length) {
     try {
@@ -294,7 +258,7 @@ app.post('/webhook/5c697459-3a69-4009-b724-43069e591f81', async (req, res) => {
   }
 
   await handleVisitante(phone, text);
-});
+}
 
 // ── Handler: resposta de lista interativa ────────────────────────────────────
 async function handleListResponse(phone, rowId, liderInfo) {
@@ -315,8 +279,7 @@ async function handleListResponse(phone, rowId, liderInfo) {
         break;
       }
       case 'nao_atende': {
-        await atualizarStatusVisitante(id, { visitante_status: 'não atende' });
-        log(phone, `Visitante ID ${id} → não atende (lista)`);
+        log(phone, `Visitante ID ${id} → perfil não atende (lista)`);
         await redirecionarVisitante(id, {
           nome:        v.visitante_nome,
           telefone:    v.visitante_telefone,
@@ -326,7 +289,7 @@ async function handleListResponse(phone, rowId, liderInfo) {
           endereco:    v.visitante_endereco,
           bairro:      v.visitante_bairro,
           cidade:      v.visitante_cidade,
-        }, phone);
+        }, phone, 'perfil não atende');
         confirmacao = `Entendido! ✅ ${v.visitante_nome} foi encaminhado para outro PG. Muito obrigado pelo retorno, líder ${liderInfo.nome}! 🙏`;
         break;
       }
@@ -442,7 +405,7 @@ async function handleLider(phone, text, liderInfo) {
             endereco:   v.visitante_endereco,
             bairro:     v.visitante_bairro,
             cidade:     v.visitante_cidade,
-          }, phone);
+          }, phone, statusAtual);
 
           const confirmacao =
             `Tudo certo, líder ${liderInfo.nome}! 😊 Encontrei um novo PG para ${v.visitante_nome}.\n` +
@@ -576,12 +539,40 @@ async function handleVisitante(phone, text) {
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
+// Dispara lembretes imediatamente (somente em ambiente local, sem restrição de data)
+app.post('/test/lembrete', async (_req, res) => {
+  try {
+    await scheduler.dispararLembretes();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Força reenvio de lembrete para um líder específico: GET ou POST /admin/lembrete/3496550333
+async function handleLembreteAdmin(req, res) {
+  try {
+    const resultado = await scheduler.dispararLembretesLider(req.params.telefone);
+    res.json({ ok: true, ...resultado });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+app.get('/admin/lembrete/:telefone', handleLembreteAdmin);
+app.post('/admin/lembrete/:telefone', handleLembreteAdmin);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\nServidor rodando na porta ${PORT}`);
-  console.log(`Webhook: POST /webhook/5c697459-3a69-4009-b724-43069e591f81`);
-  console.log(`Health:  GET  /health`);
-  console.log(`Lembrete visitante: a cada 2 min sem resposta`);
-  console.log(`Lembrete líder: toda segunda-feira\n`);
+  console.log(`Health: GET /health`);
+  console.log(`Lembrete visitante: a cada 2 min sem resposta\n`);
   scheduler.iniciar();
+  startWhatsApp({
+    onMessage: handleIncomingMessage,
+    onPoll:    handleIncomingPoll,
+    onVoice:   handleIncomingVoice,
+  }).catch(err => {
+    console.error('[whatsapp] Erro ao iniciar cliente:', err.message);
+    process.exit(1);
+  });
 });

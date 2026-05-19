@@ -1,11 +1,11 @@
 require('./load-env');
-const { sendText, sendTyping } = require('./evolution-api');
+const { sendText, sendTyping, sendButtons } = require('./whatsapp');
 const {
   buscarRelatorioVisitantesSemRetorno,
   buscarRelatorioLideresAtendimentoParado,
 } = require('./supabase');
 
-const ADMINS_NORM = new Set(['34998096868', '34996689999', '34999931849']);
+const ADMINS_NORM = new Set(['34998096868', '34999931849']); // 34996689999 removido temporariamente para teste de líder
 
 function variantes(phone) {
   const digits = phone.replace(/\D/g, '');
@@ -33,12 +33,13 @@ function log(phone, msg) {
   console.log(`[${ts}] [admin:${phone}] ${msg}`);
 }
 
-const MENU =
-  `Olá! 👋 Sou o assistente administrativo da Igreja Sal da Terra.\n\n` +
-  `Posso gerar os seguintes relatórios:\n\n` +
-  `*1️⃣* Lista completa de visitantes que pediram PG e estão sem retorno\n` +
-  `*2️⃣* Líderes com atendimentos parados ou incompletos (visitante, líder, status e datas)\n\n` +
-  `Responda com o *número* do relatório desejado.`;
+const MENU_TEXTO =
+  `Olá! 👋 Assistente administrativo da Igreja Sal da Terra.\n\nEscolha o relatório:`;
+
+const MENU_BOTOES = [
+  { id: '1', text: '📋 Visitantes sem retorno'         },
+  { id: '2', text: '📋 Líderes com atendimento parado' },
+];
 
 function formatarData(valor) {
   if (!valor) return '—';
@@ -125,9 +126,13 @@ async function handleAdmin(phone, text) {
     return;
   }
 
-  // Qualquer outra mensagem → menu
+  // Qualquer outra mensagem → menu com botões
   await sendTyping(phone);
-  await sendText(phone, MENU);
+  try {
+    await sendButtons(phone, MENU_TEXTO, MENU_BOTOES);
+  } catch (_) {
+    await sendText(phone, `${MENU_TEXTO}\n\n1️⃣ Visitantes sem retorno\n2️⃣ Líderes com atendimento parado`);
+  }
 }
 
 module.exports = { isAdmin, handleAdmin };

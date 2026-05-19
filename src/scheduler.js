@@ -5,8 +5,7 @@ const {
   buscarVisitantesSemContato,
   buscarVisitantePorId,
 } = require('./supabase');
-const { sendTextComFallback, sendPollComFallback } = require('./evolution-api');
-const { registerPollVisitante } = require('./poll-map');
+const { sendTextComFallback, sendButtonsComFallback } = require('./whatsapp');
 const { redirecionarVisitante } = require('./redirecionamento');
 const { logMensagemLider } = require('./msg-logger');
 
@@ -48,6 +47,27 @@ function jaEnviouHojeNoLog() {
 function log(msg) {
   const ts = new Date().toLocaleTimeString('pt-BR');
   console.log(`[${ts}] [scheduler] ${msg}`);
+}
+
+function formatarVisitanteParaLider(v) {
+  const partes = [];
+  if (v.visitante_telefone) partes.push(`📱 ${v.visitante_telefone}`);
+  if (v.visitante_idade)    partes.push(`${v.visitante_idade} anos`);
+  if (v.visitante_bairro)   partes.push(`📍 ${v.visitante_bairro}`);
+  const info = partes.length ? partes.join(' | ') + '\n' : '';
+  const cadastro = `Cadastrado em ${v.visitante_data_contato ?? '—'}.`;
+
+  const status = (v.visitante_status ?? 'ATIVO').toLowerCase();
+  let pergunta;
+  if (status === 'convidado') {
+    pergunta = 'Já foi convidado — está frequentando o PG?';
+  } else if (status === 'esperando retorno') {
+    pergunta = 'Ainda aguardando retorno do visitante.';
+  } else {
+    pergunta = 'Qual é a situação?';
+  }
+
+  return `${v.visitante_nome}\n${info}${cadastro} ${pergunta}`;
 }
 
 // Agrupa visitantes por líder
@@ -111,24 +131,18 @@ async function dispararLembretes() {
           `Para cada um, é só selecionar o status abaixo 👇`;
         await sendTextComFallback(lider.telefone, saudacao);
 
-        // Enquete por visitante (poll nativo do WhatsApp)
+        // Lista de opções por visitante (o líder toca para escolher)
         for (const v of lider.visitantes) {
-          const descricao = `Cadastrado em ${v.visitante_data_contato ?? '—'}. Qual é a situação?`;
-          const result = await sendPollComFallback(lider.telefone, {
-            name:   `${v.visitante_nome} — ${descricao}`,
-            values: [
-              '⏳ Não respondeu ainda',
-              '📩 Convidei para o PG',
-              '✅ Está frequentando',
-              '🚫 Perfil não atende',
+          const corpo = formatarVisitanteParaLider(v);
+          await sendButtonsComFallback(
+            lider.telefone,
+            corpo,
+            [
+              { text: '⏳ Não respondeu ainda', id: `esperando:${v.id}`  },
+              { text: '📩 Convidei para o PG',  id: `convidado:${v.id}` },
+              { text: '🚫 Perfil não atende',   id: `nao_atende:${v.id}` },
             ],
-            selectableCount: 1,
-          });
-
-          // Registra mapeamento pollMessageId → visitanteId para o webhook processar
-          if (result?.messageId) {
-            registerPollVisitante(result.messageId, v.id);
-          }
+          );
 
           logMensagemLider({
             liderNome:     lider.nome,
@@ -136,7 +150,7 @@ async function dispararLembretes() {
             tipo:          'lembrete',
             visitanteNome: v.visitante_nome,
             visitanteId:   v.id,
-            mensagem:      descricao,
+            mensagem:      corpo,
           });
         }
 
@@ -179,4 +193,58 @@ function iniciar() {
   setInterval(verificarEDisparar, CHECK_INTERVAL_MS);
 }
 
-module.exports = { iniciar };
+// Reduz número para forma canônica de 10 dígitos (sem 55, sem o 9 extra do DDD)
+function canonico(tel) {
+  const d = tel.replace(/\D/g, '').replace(/^55/, '');
+  return d.length === 11 && d[2] === '9' ? d.slice(0, 2) + d.slice(3) : d;
+}
+
+// Reenvia lembretes apenas para um líder específico (aceita qualquer variante do número)
+async function dispararLembretesLider(telefone) {
+  const telCanon = canonico(telefone);
+  log(`Reenvio forçado para líder ${telCanon}...`);
+  try {
+    const todos = await buscarVisitantesSemContato();
+    const liderVisitantes = todos.filter(v => {
+      return canonico(v.lider_telefone ?? '') === telCanon;
+    });
+    if (!liderVisitantes.length) {
+      log(`Nenhum visitante pendente para ${telNorm}.`);
+      return { enviados: 0 };
+    }
+    const lideres = agruparPorLider(liderVisitantes);
+    for (const lider of lideres) {
+      const saudacao =
+        `Oi líder ${lider.nome}! 😊 Passando para lembrar que você tem visitante(s) aguardando.\n` +
+        `Para cada um, é só selecionar o status abaixo 👇`;
+      await sendTextComFallback(lider.telefone, saudacao);
+      for (const v of lider.visitantes) {
+        const corpo = formatarVisitanteParaLider(v);
+        await sendButtonsComFallback(
+          lider.telefone,
+          corpo,
+          [
+            { text: '⏳ Não respondeu ainda', id: `esperando:${v.id}`  },
+            { text: '📩 Convidei para o PG',  id: `convidado:${v.id}` },
+            { text: '🚫 Perfil não atende',   id: `nao_atende:${v.id}` },
+          ],
+        );
+        logMensagemLider({
+          liderNome:     lider.nome,
+          liderTelefone: lider.telefone,
+          tipo:          'lembrete',
+          visitanteNome: v.visitante_nome,
+          visitanteId:   v.id,
+          mensagem:      corpo,
+        });
+      }
+      log(`Reenvio concluído para ${lider.nome} — ${lider.visitantes.length} visitante(s)`);
+    }
+    return { enviados: liderVisitantes.length };
+  } catch (err) {
+    log(`Erro no reenvio para ${telNorm}: ${err.message}`);
+    throw err;
+  }
+}
+
+module.exports = { iniciar, dispararLembretes, dispararLembretesLider };

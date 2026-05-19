@@ -7,7 +7,7 @@ const {
   atualizarStatusVisitante,
   buscarVisitanteComPGAtivo,
 } = require('./supabase');
-const { sendTextComFallback } = require('./evolution-api');
+const { sendTextComFallback } = require('./whatsapp');
 
 const MAX_TENTATIVAS = 5;
 const SECRETARIA_PHONE = process.env.SECRETARIA_PHONE ?? '5534999318496';
@@ -46,18 +46,19 @@ async function notificarSecretaria(v, totalTentativas) {
 }
 
 /**
- * Marca a linha atual como 'numero_inexistente' e percorre PGs em sequência
+ * Marca a linha atual com o status informado e percorre PGs em sequência
  * até conseguir notificar um líder por WhatsApp.
  *
- * @param {number}  idLinhaAtual - ID da linha no banco a marcar como numero_inexistente
- * @param {object}  v            - dados do visitante { nome, telefone, idade, estadoCivil,
- *                                  criancas, endereco, bairro, cidade }
- * @param {string}  identificador - string para log (ex: phone do visitante)
+ * @param {number}  idLinhaAtual    - ID da linha no banco a marcar
+ * @param {object}  v               - dados do visitante { nome, telefone, idade, estadoCivil,
+ *                                    criancas, endereco, bairro, cidade }
+ * @param {string}  identificador   - string para log (ex: phone do visitante)
+ * @param {string}  [statusParaGravar='numero_inexistente'] - status a salvar na linha atual
  */
-async function redirecionarVisitante(idLinhaAtual, v, identificador) {
+async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaGravar = 'numero_inexistente') {
   try {
-    await atualizarStatusVisitante(idLinhaAtual, { visitante_status: 'numero_inexistente' });
-    log(identificador, `Linha ${idLinhaAtual} → numero_inexistente. Buscando próximo PG...`);
+    await atualizarStatusVisitante(idLinhaAtual, { visitante_status: statusParaGravar });
+    log(identificador, `Linha ${idLinhaAtual} → ${statusParaGravar}. Buscando próximo PG...`);
 
     // Carrega histórico completo de líderes já tentados para este visitante
     const excluidos = await buscarLideresAnteriores(v.telefone);

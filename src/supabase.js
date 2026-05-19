@@ -262,7 +262,7 @@ async function buscarVisitantesSemContato() {
     `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
     `&lider_telefone=not.is.null` +
     `&lider_telefone=neq.` +
-    `&select=id,visitante_nome,visitante_telefone,lider,lider_telefone,visitante_data_contato` +
+    `&select=id,visitante_nome,visitante_telefone,visitante_idade,visitante_bairro,visitante_status,lider,lider_telefone,visitante_data_contato` +
     `&order=lider_telefone.asc`;
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
