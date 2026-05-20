@@ -13,7 +13,7 @@ export default function Login() {
     e.preventDefault()
     if (USERS[usuario] === senha) {
       sessionStorage.setItem('auth', '1')
-      nav('/pgs')
+      nav('/dashboard')
     } else {
       setErro('Usuário ou senha incorretos.')
     }
