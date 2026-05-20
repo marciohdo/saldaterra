@@ -155,6 +155,12 @@ export default function PGs() {
             + Novo PG
           </button>
           <button
+            onClick={() => nav('/dashboard')}
+            className="bg-blue-700 hover:bg-blue-600 border border-blue-400 text-white px-4 py-1.5 rounded-lg text-sm transition-colors"
+          >
+            Análises
+          </button>
+          <button
             onClick={fetchPGs}
             className="bg-blue-700 hover:bg-blue-600 border border-blue-400 text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
             title="Recarregar"
