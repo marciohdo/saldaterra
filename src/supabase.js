@@ -259,7 +259,7 @@ async function buscarPGPorProximidade(cidade, bairro, endereco, excluirLideres =
 // Retorna visitantes com status ATIVO (sem contato do líder) agrupados por líder
 async function buscarVisitantesSemContato() {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
-    `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
+    `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente,convidado)` +
     `&lider_telefone=not.is.null` +
     `&lider_telefone=neq.` +
     `&select=id,visitante_nome,visitante_telefone,visitante_idade,visitante_bairro,visitante_status,lider,lider_telefone,visitante_data_contato` +
