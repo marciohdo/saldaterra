@@ -148,6 +148,14 @@ export default function Dashboard() {
     .map(([lider, qtd]) => ({ lider: lider.split(' ')[0], total: qtd }))
 
   // Cadastros por dia (últimos 30 dias)
+  // O banco armazena datas em DD/MM/YYYY — converte para YYYY-MM-DD para comparar
+  function parseDateBR(dt) {
+    if (!dt) return null
+    const p = dt.split('/')
+    if (p.length === 3) return `${p[2]}-${p[1]}-${p[0]}`
+    return dt
+  }
+
   const hoje = new Date()
   const limite = new Date(hoje)
   limite.setDate(hoje.getDate() - 29)
@@ -158,7 +166,7 @@ export default function Dashboard() {
     cadastrosPorDia[d.toISOString().slice(0, 10)] = 0
   }
   for (const d of dados) {
-    const dt = d.visitante_data_contato
+    const dt = parseDateBR(d.visitante_data_contato)
     if (dt && cadastrosPorDia[dt] !== undefined) {
       cadastrosPorDia[dt]++
     }
