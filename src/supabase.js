@@ -184,7 +184,7 @@ async function verificarLider(telefone) {
   return null;
 }
 
-// Retorna visitantes pendentes (ATIVO ou convidado pelo lider) atribuídos a este líder
+// Retorna visitantes pendentes (ATIVO ou esperando retorno) atribuídos a este líder
 async function buscarVisitantesDoLider(liderTelefone) {
   const telNorm  = liderTelefone.startsWith('55') ? liderTelefone.slice(2) : liderTelefone;
   // inclui variantes com/sem o 9 após o DDD para cobrir diferentes formatos gravados no banco
