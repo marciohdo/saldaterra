@@ -29,17 +29,20 @@ function msgParaLider(liderNome, v) {
   );
 }
 
-async function notificarSecretaria(v, totalTentativas) {
+async function notificarSecretaria(v, totalTentativas, semPG = false) {
   const destino = TEST_MODE ? TEST_PHONE : SECRETARIA_PHONE;
+  const obs = semPG
+    ? `Tentamos ${totalTentativas} PGs e nenhum está disponível. Pode verificar manualmente? 🙏`
+    : `Este visitante já passou por *${totalTentativas} líderes* sem retorno. Pode acompanhar de perto? 🙏`;
   const msg =
-    `Olá! 😊 Precisamos de ajuda para encaminhar um visitante.\n\n` +
+    `⚠️ Atenção secretaria!\n\n` +
     `Nome: ${v.nome}\nTelefone: ${v.telefone}\n` +
     `Endereço: ${v.endereco}, ${v.bairro} - ${v.cidade}\n` +
     `Idade: ${v.idade} | Estado civil: ${v.estadoCivil} | Crianças: ${v.criancas}\n\n` +
-    `Tentamos ${totalTentativas} PGs e nenhum conseguiu ser notificado. Pode verificar manualmente? 🙏`;
+    obs;
   try {
     await sendTextComFallback(destino, msg);
-    log('secretaria', `Notificada após ${totalTentativas} tentativas para ${v.nome}`);
+    log('secretaria', `Notificada (semPG=${semPG}) após ${totalTentativas} tentativas para ${v.nome}`);
   } catch (e) {
     log('secretaria', `Erro ao notificar secretaria: ${e.message}`);
   }
@@ -63,6 +66,11 @@ async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaG
     // Carrega histórico completo de líderes já tentados para este visitante
     const excluidos = await buscarLideresAnteriores(v.telefone);
 
+    // Notifica secretaria se visitante já passou por mais de 2 líderes
+    if (excluidos.length > 2) {
+      await notificarSecretaria(v, excluidos.length);
+    }
+
     for (let t = 0; t < MAX_TENTATIVAS; t++) {
       const totalJaTentados = excluidos.length;
       log(identificador, `Tentativa ${t + 1} — excluídos: ${excluidos.join(', ') || '(nenhum)'}`);
@@ -74,7 +82,7 @@ async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaG
 
       if (!pg) {
         log(identificador, `Nenhum PG disponível na tentativa ${t + 1}`);
-        if (totalJaTentados >= 3) await notificarSecretaria(v, totalJaTentados + 1);
+        if (totalJaTentados >= 3) await notificarSecretaria(v, totalJaTentados + 1, true);
         return;
       }
 
@@ -120,7 +128,7 @@ async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaG
     }
 
     log(identificador, `Máximo de ${MAX_TENTATIVAS} tentativas atingido para ${v.nome}`);
-    await notificarSecretaria(v, excluidos.length);
+    await notificarSecretaria(v, excluidos.length, true);
   } catch (err) {
     log(identificador, `Erro no redirecionamento: ${err.message}`);
     console.error(err);
