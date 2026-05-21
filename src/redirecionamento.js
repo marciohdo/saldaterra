@@ -66,8 +66,8 @@ async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaG
     // Carrega histórico completo de líderes já tentados para este visitante
     const excluidos = await buscarLideresAnteriores(v.telefone);
 
-    // Notifica secretaria se visitante já passou por mais de 2 líderes
-    if (excluidos.length > 2) {
+    // Notifica secretaria se visitante já passou por 3 ou mais líderes
+    if (excluidos.length >= 3) {
       await notificarSecretaria(v, excluidos.length);
     }
 
