@@ -209,7 +209,7 @@ async function dispararLembretesLider(telefone) {
       return canonico(v.lider_telefone ?? '') === telCanon;
     });
     if (!liderVisitantes.length) {
-      log(`Nenhum visitante pendente para ${telNorm}.`);
+      log(`Nenhum visitante pendente para ${telCanon}.`);
       return { enviados: 0 };
     }
     const lideres = agruparPorLider(liderVisitantes);
@@ -242,7 +242,7 @@ async function dispararLembretesLider(telefone) {
     }
     return { enviados: liderVisitantes.length };
   } catch (err) {
-    log(`Erro no reenvio para ${telNorm}: ${err.message}`);
+    log(`Erro no reenvio para ${telCanon}: ${err.message}`);
     throw err;
   }
 }
