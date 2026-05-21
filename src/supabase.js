@@ -205,7 +205,7 @@ async function buscarVisitantesDoLider(liderTelefone) {
 
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
     `?or=(${orClause})` +
-    `&visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
+    `&visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente,convidado)` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_ini,visitante_data_fim,visitante_cidade,visitante_bairro` +
     `&order=id.desc`;
   const res = await fetch(url, { headers: HEADERS });
