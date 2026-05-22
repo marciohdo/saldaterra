@@ -1,6 +1,6 @@
 require('./load-env');
 const express = require('express');
-const { sendText, sendTyping, markAsRead, sendTextComFallback } = require('./whatsapp');
+const { sendText, sendTyping, markAsRead, sendTextComFallback, formatarTelefoneExibicao } = require('./whatsapp');
 const { startWhatsApp } = require('./whatsapp-client');
 const { reply }             = require('./claude');
 const {
@@ -493,7 +493,7 @@ async function handleVisitante(phone, text) {
             const msgLider =
               `Oi líder ${liderNome}, que alegria! 😊 Um novo visitante foi indicado para o seu PG.\n\n` +
               `Nome: ${json.nome_completo}\n` +
-              `Telefone: ${phone}\n` +
+              `Telefone: ${formatarTelefoneExibicao(phone)}\n` +
               `Idade: ${json.idade}\n` +
               `Estado civil: ${json.estado_civil}\n` +
               `Crianças: ${json.tem_criancas}\n` +

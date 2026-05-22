@@ -7,7 +7,7 @@ const {
   atualizarStatusVisitante,
   buscarVisitanteComPGAtivo,
 } = require('./supabase');
-const { sendTextComFallback } = require('./whatsapp');
+const { sendTextComFallback, formatarTelefoneExibicao } = require('./whatsapp');
 
 const MAX_TENTATIVAS = 5;
 const SECRETARIA_PHONE = process.env.SECRETARIA_PHONE ?? '5534999318496';
@@ -22,7 +22,7 @@ function log(id, msg) {
 function msgParaLider(liderNome, v) {
   return (
     `Oi líder ${liderNome}, que alegria! 😊 Um visitante foi redirecionado para o seu PG.\n\n` +
-    `Nome: ${v.nome}\nTelefone: ${v.telefone}\nIdade: ${v.idade}\n` +
+    `Nome: ${v.nome}\nTelefone: ${formatarTelefoneExibicao(v.telefone)}\nIdade: ${v.idade}\n` +
     `Estado civil: ${v.estadoCivil}\nCrianças: ${v.criancas}\n` +
     `Endereço: ${v.endereco}, ${v.bairro} - ${v.cidade}\n\n` +
     `Entre em contato com ele(a) para dar as boas-vindas! 🌟`
@@ -36,7 +36,7 @@ async function notificarSecretaria(v, totalTentativas, semPG = false) {
     : `Este visitante já passou por *${totalTentativas} líderes* sem retorno. Pode acompanhar de perto? 🙏`;
   const msg =
     `⚠️ Atenção secretaria!\n\n` +
-    `Nome: ${v.nome}\nTelefone: ${v.telefone}\n` +
+    `Nome: ${v.nome}\nTelefone: ${formatarTelefoneExibicao(v.telefone)}\n` +
     `Endereço: ${v.endereco}, ${v.bairro} - ${v.cidade}\n` +
     `Idade: ${v.idade} | Estado civil: ${v.estadoCivil} | Crianças: ${v.criancas}\n\n` +
     obs;

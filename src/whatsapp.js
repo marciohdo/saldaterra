@@ -225,4 +225,11 @@ async function sendListComFallback(telefone, text, rows) {
   throw e;
 }
 
-module.exports = { sendText, sendTyping, markAsRead, sendTextComFallback, sendPoll, sendPollComFallback, sendButtons, sendButtonsComFallback, sendList, sendListComFallback, resolverJid };
+// Normaliza telefone para exibição: remove +55, garante 11 dígitos (DDD + 9 + 8)
+function formatarTelefoneExibicao(tel) {
+  const d = (tel ?? '').replace(/\D/g, '').replace(/^55/, '');
+  if (d.length === 10) return d.slice(0, 2) + '9' + d.slice(2);
+  return d;
+}
+
+module.exports = { sendText, sendTyping, markAsRead, sendTextComFallback, sendPoll, sendPollComFallback, sendButtons, sendButtonsComFallback, sendList, sendListComFallback, resolverJid, formatarTelefoneExibicao };

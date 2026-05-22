@@ -5,7 +5,7 @@ const {
   buscarVisitantesSemContato,
   buscarVisitantePorId,
 } = require('./supabase');
-const { sendTextComFallback, sendButtonsComFallback } = require('./whatsapp');
+const { sendTextComFallback, sendButtonsComFallback, formatarTelefoneExibicao } = require('./whatsapp');
 const { redirecionarVisitante } = require('./redirecionamento');
 const { logMensagemLider } = require('./msg-logger');
 
@@ -51,7 +51,7 @@ function log(msg) {
 
 function formatarVisitanteParaLider(v) {
   const partes = [];
-  if (v.visitante_telefone) partes.push(`📱 ${v.visitante_telefone}`);
+  if (v.visitante_telefone) partes.push(`📱 ${formatarTelefoneExibicao(v.visitante_telefone)}`);
   if (v.visitante_idade)    partes.push(`${v.visitante_idade} anos`);
   if (v.visitante_bairro)   partes.push(`📍 ${v.visitante_bairro}`);
   const info = partes.length ? partes.join(' | ') + '\n' : '';
