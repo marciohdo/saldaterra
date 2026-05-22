@@ -82,7 +82,7 @@ export default function Dashboard() {
     try {
       const res = await fetch(
         `${URL}/rest/v1/LISTA_ACIONAMENTOS` +
-        `?select=id,visitante_nome,visitante_status,visitante_data_contato,lider,lider_telefone` +
+        `?select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_contato,lider,lider_telefone` +
         `&order=visitante_data_contato.asc`,
         { headers: HDR }
       )
@@ -102,7 +102,7 @@ export default function Dashboard() {
 
   // ── Cálculos ──────────────────────────────────────────────────────────────
 
-  const total       = dados.length
+  const total       = new Set(dados.map(d => d.visitante_telefone).filter(Boolean)).size
   const frequentando = dados.filter(d => (d.visitante_status ?? '').toLowerCase() === 'frequentando').length
   const pendentes    = dados.filter(d => {
     const s = (d.visitante_status ?? '').toLowerCase()
