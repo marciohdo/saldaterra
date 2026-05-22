@@ -289,8 +289,8 @@ async function handleListResponse(phone, rowId, liderInfo) {
           endereco:    v.visitante_endereco,
           bairro:      v.visitante_bairro,
           cidade:      v.visitante_cidade,
-        }, phone, 'perfil não atende');
-        confirmacao = `Entendido! ✅ ${v.visitante_nome} foi encaminhado para outro PG. Muito obrigado pelo retorno, líder ${liderInfo.nome}! 🙏`;
+        }, phone, 'perfil não atende', phone);
+        // notificação ao líder já enviada dentro de redirecionarVisitante
         break;
       }
       case 'convidado': {

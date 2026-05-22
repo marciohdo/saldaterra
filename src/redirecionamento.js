@@ -52,13 +52,15 @@ async function notificarSecretaria(v, totalTentativas, semPG = false) {
  * Marca a linha atual com o status informado e percorre PGs em sequência
  * até conseguir notificar um líder por WhatsApp.
  *
- * @param {number}  idLinhaAtual    - ID da linha no banco a marcar
- * @param {object}  v               - dados do visitante { nome, telefone, idade, estadoCivil,
- *                                    criancas, endereco, bairro, cidade }
- * @param {string}  identificador   - string para log (ex: phone do visitante)
+ * @param {number}  idLinhaAtual          - ID da linha no banco a marcar
+ * @param {object}  v                     - dados do visitante { nome, telefone, idade, estadoCivil,
+ *                                          criancas, endereco, bairro, cidade }
+ * @param {string}  identificador         - string para log (ex: phone do visitante)
  * @param {string}  [statusParaGravar='numero_inexistente'] - status a salvar na linha atual
+ * @param {string}  [liderAnteriorTelefone=null] - telefone do líder original; se informado,
+ *                                          recebe aviso de que o visitante foi encaminhado
  */
-async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaGravar = 'numero_inexistente') {
+async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaGravar = 'numero_inexistente', liderAnteriorTelefone = null) {
   try {
     await atualizarStatusVisitante(idLinhaAtual, { visitante_status: statusParaGravar });
     log(identificador, `Linha ${idLinhaAtual} → ${statusParaGravar}. Buscando próximo PG...`);
@@ -116,6 +118,20 @@ async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaG
         const enviado = await sendTextComFallback(destino, msgParaLider(pg.LIDER, v));
         log(identificador, `Líder ${pg.LIDER} notificado: ${enviado}`);
         if (novoId) await atualizarStatusVisitante(novoId, { lider_avisado: 'sim' }).catch(() => {});
+
+        if (liderAnteriorTelefone) {
+          const msgAnterior =
+            `Oi líder! 😊 ${v.nome} foi encaminhado(a) para outro PG que melhor atende ao perfil dele(a).\n` +
+            `Muito obrigado pelo retorno! Deus abençoe o seu trabalho! 🙏`;
+          const destinoAnterior = TEST_MODE ? TEST_PHONE : liderAnteriorTelefone;
+          try {
+            await sendTextComFallback(destinoAnterior, msgAnterior);
+            log(identificador, `Líder anterior ${liderAnteriorTelefone} avisado sobre encaminhamento de ${v.nome}`);
+          } catch (e) {
+            log(identificador, `Aviso: não foi possível notificar líder anterior: ${e.message}`);
+          }
+        }
+
         return; // entregue com sucesso — encerra o loop
       } catch (err) {
         log(identificador, `Falhou ao notificar ${pg.LIDER}: ${err.message}`);
