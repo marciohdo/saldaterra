@@ -120,11 +120,13 @@ export default function Dashboard() {
     .sort((a, b) => b[1] - a[1])
     .map(([status, qtd]) => ({ name: labelStatus(status), value: qtd, status, total }))
 
-  // Top líderes com visitantes pendentes
+  // Top líderes com visitantes pendentes (alinhado com buscarVisitantesDoLider)
+  // 'convidado' é excluído: líder já cumpriu seu papel, aguarda o visitante
+  const STATUS_TERMINAL = new Set(['frequentando', 'não atende', 'lotado', 'numero_inexistente', 'convidado', 'perfil não atende'])
   const pendentesPorLider = {}
   for (const d of dados) {
     const s = (d.visitante_status ?? '').toLowerCase()
-    if (s === 'ativo' || s === 'esperando retorno' || s === 'convidado') {
+    if (!STATUS_TERMINAL.has(s)) {
       const lider = d.lider || 'Sem líder'
       pendentesPorLider[lider] = (pendentesPorLider[lider] ?? 0) + 1
     }
