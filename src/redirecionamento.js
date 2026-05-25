@@ -77,8 +77,10 @@ async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaG
       const totalJaTentados = excluidos.length;
       log(identificador, `Tentativa ${t + 1} — excluídos: ${excluidos.join(', ') || '(nenhum)'}`);
 
-      // 1ª e 2ª tentativa: usa perfil; 3ª em diante: só proximidade
-      const pg = totalJaTentados >= 2
+      // Kids (< 12 anos) sempre busca por perfil para não sair do PG correto
+      // Demais perfis: 1ª e 2ª tentativa por perfil; 3ª em diante por proximidade
+      const isKids = parseInt(v.idade) >= 5 && parseInt(v.idade) < 12;
+      const pg = (!isKids && totalJaTentados >= 2)
         ? await buscarPGPorProximidade(v.cidade, v.bairro, v.endereco, excluidos)
         : await buscarPGProximo(v.cidade, v.bairro, v.estadoCivil, v.criancas, v.idade, v.endereco, excluidos);
 

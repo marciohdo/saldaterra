@@ -40,8 +40,8 @@ async function buscarPGProximo(cidade, bairro, estadoCivil, temCriancas, idade, 
   const pg = await _buscarPorPerfil(perfil, cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluidos);
   if (pg) return pg;
 
-  // Fallback: tenta com perfil Familia
-  if (perfil !== 'Familia') {
+  // Fallback: tenta com perfil Familia (Kids não faz fallback — perfil incompatível)
+  if (perfil !== 'Familia' && perfil !== 'Kids') {
     console.log('[supabase] Fallback para perfil Familia');
     return _buscarPorPerfil('Familia', cidade, bairro, endereco, estadoCivil, temCriancas, idade, excluidos);
   }
@@ -205,7 +205,7 @@ async function buscarVisitantesDoLider(liderTelefone) {
 
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
     `?or=(${orClause})` +
-    `&visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente,convidado)` +
+    `&visitante_status=not.in.(frequentando,não atende,perfil não atende,lotado,numero_inexistente,convidado)` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_ini,visitante_data_fim,visitante_cidade,visitante_bairro` +
     `&order=id.desc`;
   const res = await fetch(url, { headers: HEADERS });
@@ -275,7 +275,7 @@ async function buscarVisitanteComPGAtivo(telefone) {
   const tel = encodeURIComponent(telefone);
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
     `?visitante_telefone=eq.${tel}` +
-    `&visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
+    `&visitante_status=not.in.(frequentando,não atende,perfil não atende,lotado,numero_inexistente)` +
     `&select=id,visitante_nome,lider,lider_telefone,visitante_status` +
     `&order=id.desc&limit=1`;
   const res = await fetch(url, { headers: HEADERS });
