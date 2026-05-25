@@ -86,6 +86,8 @@ async function sendTextComFallback(telefone, text) {
       await sendText(numero, text);
       return numero;
     } catch (err) {
+      // Erros de infraestrutura (socket não iniciado) não são falha de número — repropaga imediatamente
+      if (!getSocket()) throw err;
       ultimoErro = err;
     }
   }
