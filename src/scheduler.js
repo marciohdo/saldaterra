@@ -134,15 +134,18 @@ async function dispararLembretes() {
         // Lista de opções por visitante (o líder toca para escolher)
         for (const v of lider.visitantes) {
           const corpo = formatarVisitanteParaLider(v);
-          await sendButtonsComFallback(
-            lider.telefone,
-            corpo,
-            [
-              { text: '⏳ Não respondeu ainda', id: `esperando:${v.id}`  },
-              { text: '📩 Convidei para o PG',  id: `convidado:${v.id}` },
-              { text: '🚫 Perfil não atende',   id: `nao_atende:${v.id}` },
-            ],
-          );
+          const isConvidado = (v.visitante_status ?? '').toLowerCase() === 'convidado';
+          const botoes = isConvidado
+            ? [
+                { text: '✅ Está frequentando',  id: `frequentando:${v.id}` },
+                { text: '🚫 Perfil não atende',  id: `nao_atende:${v.id}`   },
+              ]
+            : [
+                { text: '⏳ Não respondeu ainda', id: `esperando:${v.id}`   },
+                { text: '📩 Convidei para o PG',  id: `convidado:${v.id}`   },
+                { text: '🚫 Perfil não atende',   id: `nao_atende:${v.id}`  },
+              ];
+          await sendButtonsComFallback(lider.telefone, corpo, botoes);
 
           logMensagemLider({
             liderNome:     lider.nome,
@@ -220,15 +223,18 @@ async function dispararLembretesLider(telefone) {
       await sendTextComFallback(lider.telefone, saudacao);
       for (const v of lider.visitantes) {
         const corpo = formatarVisitanteParaLider(v);
-        await sendButtonsComFallback(
-          lider.telefone,
-          corpo,
-          [
-            { text: '⏳ Não respondeu ainda', id: `esperando:${v.id}`  },
-            { text: '📩 Convidei para o PG',  id: `convidado:${v.id}` },
-            { text: '🚫 Perfil não atende',   id: `nao_atende:${v.id}` },
-          ],
-        );
+        const isConvidado = (v.visitante_status ?? '').toLowerCase() === 'convidado';
+        const botoes = isConvidado
+          ? [
+              { text: '✅ Está frequentando', id: `frequentando:${v.id}` },
+              { text: '🚫 Perfil não atende', id: `nao_atende:${v.id}`   },
+            ]
+          : [
+              { text: '⏳ Não respondeu ainda', id: `esperando:${v.id}`  },
+              { text: '📩 Convidei para o PG',  id: `convidado:${v.id}`  },
+              { text: '🚫 Perfil não atende',   id: `nao_atende:${v.id}` },
+            ];
+        await sendButtonsComFallback(lider.telefone, corpo, botoes);
         logMensagemLider({
           liderNome:     lider.nome,
           liderTelefone: lider.telefone,
