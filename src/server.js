@@ -148,7 +148,7 @@ setInterval(async () => {
 }, 30_000);
 
 // Detecta row IDs de listas interativas enviadas pelo bot (ex: "convidado:123")
-const ROW_ID_RE = /^(esperando|nao_atende|convidado|frequentando):\d+$/;
+const ROW_ID_RE = /^(esperando|nao_atende|convidado|frequentando|tentativa_1|tentativa_2|tentativa_3):\d+$/;
 
 async function handleIncomingVoice(phone, remoteJid, messageId) {
   markAsRead(remoteJid, messageId);
@@ -275,7 +275,26 @@ async function handleListResponse(phone, rowId, liderInfo) {
       case 'esperando': {
         await atualizarStatusVisitante(id, { visitante_status: 'esperando retorno' });
         log(phone, `Visitante ID ${id} → esperando retorno (lista)`);
-        confirmacao = `Combinado! ✅ Registrei que ${v.visitante_nome} ainda não respondeu. Me avisa quando tiver novidades! 😊`;
+        await sendButtonsComFallback(phone,
+          `Quantas vezes você já tentou contato com ${v.visitante_nome}?`,
+          [
+            { text: '1x',         id: `tentativa_1:${id}` },
+            { text: '2x',         id: `tentativa_2:${id}` },
+            { text: '3x ou mais', id: `tentativa_3:${id}` },
+          ],
+        );
+        break;
+      }
+      case 'tentativa_1':
+      case 'tentativa_2': {
+        log(phone, `Visitante ID ${id} → tentativa ${acao.slice(-1)}x sem resposta`);
+        confirmacao = `Entendido! 😊 Continuarei te lembrando sobre ${v.visitante_nome}.`;
+        break;
+      }
+      case 'tentativa_3': {
+        await atualizarStatusVisitante(id, { visitante_status: 'não atende' });
+        log(phone, `Visitante ID ${id} → não atende (3x sem resposta)`);
+        confirmacao = `Registrado! Após 3 tentativas, marquei ${v.visitante_nome} como "não atende". Obrigado pelo esforço! 🙏`;
         break;
       }
       case 'nao_atende': {
