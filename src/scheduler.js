@@ -134,16 +134,22 @@ async function dispararLembretes() {
         // Lista de opções por visitante (o líder toca para escolher)
         for (const v of lider.visitantes) {
           const corpo = formatarVisitanteParaLider(v);
-          const isConvidado = (v.visitante_status ?? '').toLowerCase() === 'convidado';
-          const botoes = isConvidado
+          const statusV = (v.visitante_status ?? '').toLowerCase();
+          const botoes = statusV === 'convidado'
             ? [
-                { text: '✅ Está frequentando',  id: `frequentando:${v.id}` },
-                { text: '🚫 Perfil não atende',  id: `nao_atende:${v.id}`   },
+                { text: '✅ Está frequentando',     id: `frequentando:${v.id}` },
+                { text: '🚫 Perfil não atende',     id: `nao_atende:${v.id}`   },
+              ]
+            : statusV === 'esperando retorno'
+            ? [
+                { text: '📩 Visitante foi convidado', id: `convidado:${v.id}`   },
+                { text: '📵 Não atende o contato',    id: `esperando:${v.id}`   },
+                { text: '🚫 Perfil não atende',       id: `nao_atende:${v.id}`  },
               ]
             : [
-                { text: '⏳ Não respondeu ainda', id: `esperando:${v.id}`   },
-                { text: '📩 Convidei para o PG',  id: `convidado:${v.id}`   },
-                { text: '🚫 Perfil não atende',   id: `nao_atende:${v.id}`  },
+                { text: '⏳ Não respondeu ainda',   id: `esperando:${v.id}`   },
+                { text: '📩 Convidei para o PG',    id: `convidado:${v.id}`   },
+                { text: '🚫 Perfil não atende',     id: `nao_atende:${v.id}`  },
               ];
           await sendButtonsComFallback(lider.telefone, corpo, botoes);
 
@@ -223,16 +229,22 @@ async function dispararLembretesLider(telefone) {
       await sendTextComFallback(lider.telefone, saudacao);
       for (const v of lider.visitantes) {
         const corpo = formatarVisitanteParaLider(v);
-        const isConvidado = (v.visitante_status ?? '').toLowerCase() === 'convidado';
-        const botoes = isConvidado
+        const statusV = (v.visitante_status ?? '').toLowerCase();
+        const botoes = statusV === 'convidado'
           ? [
-              { text: '✅ Está frequentando', id: `frequentando:${v.id}` },
-              { text: '🚫 Perfil não atende', id: `nao_atende:${v.id}`   },
+              { text: '✅ Está frequentando',     id: `frequentando:${v.id}` },
+              { text: '🚫 Perfil não atende',     id: `nao_atende:${v.id}`   },
+            ]
+          : statusV === 'esperando retorno'
+          ? [
+              { text: '📩 Visitante foi convidado', id: `convidado:${v.id}`  },
+              { text: '📵 Não atende o contato',    id: `esperando:${v.id}`  },
+              { text: '🚫 Perfil não atende',       id: `nao_atende:${v.id}` },
             ]
           : [
-              { text: '⏳ Não respondeu ainda', id: `esperando:${v.id}`  },
-              { text: '📩 Convidei para o PG',  id: `convidado:${v.id}`  },
-              { text: '🚫 Perfil não atende',   id: `nao_atende:${v.id}` },
+              { text: '⏳ Não respondeu ainda',   id: `esperando:${v.id}`  },
+              { text: '📩 Convidei para o PG',    id: `convidado:${v.id}`  },
+              { text: '🚫 Perfil não atende',     id: `nao_atende:${v.id}` },
             ];
         await sendButtonsComFallback(lider.telefone, corpo, botoes);
         logMensagemLider({
