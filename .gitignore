@@ -3,6 +3,9 @@
 *.env
 secrets.*
 
+# Sessão do WhatsApp (Baileys) — credenciais sensíveis, geradas localmente
+data/auth_info/
+
 # Python
 __pycache__/
 *.py[cod]
