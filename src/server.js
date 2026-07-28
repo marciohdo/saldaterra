@@ -585,11 +585,11 @@ app.listen(PORT, () => {
   console.log(`\nServidor rodando na porta ${PORT}`);
   console.log(`Health: GET /health`);
   console.log(`Lembrete visitante: a cada 2 min sem resposta\n`);
-  scheduler.iniciar();
   startWhatsApp({
-    onMessage: handleIncomingMessage,
-    onPoll:    handleIncomingPoll,
-    onVoice:   handleIncomingVoice,
+    onMessage:   handleIncomingMessage,
+    onPoll:      handleIncomingPoll,
+    onVoice:     handleIncomingVoice,
+    onConnected: () => scheduler.iniciar(),
   }).catch(err => {
     console.error('[whatsapp] Erro ao iniciar cliente:', err.message);
     process.exit(1);

@@ -11,12 +11,13 @@ const pino = require('pino');
 const logger = pino({ level: 'silent' });
 
 let sock = null;
+let connectedOnce = false;
 
 function getSocket() {
   return sock;
 }
 
-async function startWhatsApp({ onMessage, onPoll, onVoice }) {
+async function startWhatsApp({ onMessage, onPoll, onVoice, onConnected }) {
   const { state, saveCreds } = await useMultiFileAuthState('data/auth_info');
   const { version } = await fetchLatestWaWebVersion();
   console.log(`[whatsapp] Versão WA Web: ${version.join('.')}`);
@@ -43,6 +44,10 @@ async function startWhatsApp({ onMessage, onPoll, onVoice }) {
     }
     if (connection === 'open') {
       console.log('✅ WhatsApp conectado com sucesso!\n');
+      if (!connectedOnce) {
+        connectedOnce = true;
+        onConnected?.();
+      }
     }
     if (connection === 'close') {
       const err = lastDisconnect?.error;
@@ -51,7 +56,7 @@ async function startWhatsApp({ onMessage, onPoll, onVoice }) {
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
       if (shouldReconnect) {
         console.log('[whatsapp] Reconectando em 3s...');
-        setTimeout(() => startWhatsApp({ onMessage, onPoll, onVoice }), 3000);
+        setTimeout(() => startWhatsApp({ onMessage, onPoll, onVoice, onConnected }), 3000);
       } else {
         console.log('[whatsapp] Sessão encerrada. Delete data/auth_info e reinicie para reconectar.');
       }
