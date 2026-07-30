@@ -580,6 +580,17 @@ async function handleLembreteAdmin(req, res) {
 app.get('/admin/lembrete/:telefone', handleLembreteAdmin);
 app.post('/admin/lembrete/:telefone', handleLembreteAdmin);
 
+// Envia uma mensagem de texto avulsa para um número (teste de conectividade)
+app.post('/admin/mensagem/:telefone', async (req, res) => {
+  try {
+    const texto = req.body?.texto || req.query.texto || 'Mensagem de teste do bot Saldaterra ✅';
+    const enviado = await sendTextComFallback(req.params.telefone, texto);
+    res.json({ ok: !!enviado, enviado });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\nServidor rodando na porta ${PORT}`);
