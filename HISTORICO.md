@@ -57,6 +57,17 @@ Usuário (WhatsApp)
 
 Documentação funcional completa (fluxos, perfis, marcadores do líder, endpoints) está no `README.md`.
 
+### Dashboard web (`web/`)
+
+Sub-projeto separado — React + Vite + Tailwind + Recharts, publicado no Netlify (`netlify.toml`, base `web`, deploy automático a cada push em `main`). Fala **direto com o Supabase** pelo navegador (`web/.env`, `VITE_SUPABASE_URL`/`VITE_SUPABASE_KEY`), sem passar pelo servidor Node do bot.
+
+- `web/src/pages/Login.jsx` — autenticação simples via `sessionStorage`.
+- `web/src/pages/Dashboard.jsx` — KPIs e gráficos sobre `LISTA_ACIONAMENTOS` (funil de conversão, status, líderes com mais pendências/conversões, cadastros por dia).
+- `web/src/pages/PGs.jsx` — CRUD de `LISTA_PGS` (tabela editável).
+- `web/src/components/SemaforoBot.jsx` + `web/src/hooks/useBotStatus.js` — indicador de status do bot (ver seção "Semáforo de status" abaixo), compartilhado entre Dashboard e PGs.
+
+URL de produção: https://saldaterra.netlify.app
+
 ---
 
 ## Produção
@@ -107,6 +118,27 @@ Não existe fluxo automático de reconexão headless pronto no projeto; o proces
 5. **Importante:** aguardar o evento `creds.update` terminar de gravar (`await saveCreds(...)`) antes de dar `process.exit(0)` no script avulso — sair cedo demais deixa `creds.json` truncado (0 bytes) e a sessão não persiste.
 6. Apagar o script avulso, `pm2 restart saldaterra`, `pm2 save`.
 
+### Semáforo de status do bot
+
+O bot escreve um "heartbeat" na tabela `bot_status` do Supabase (criada manualmente via SQL Editor, não há migration no repo):
+
+```sql
+create table if not exists bot_status (
+  id text primary key,
+  status text not null default 'ativo',
+  detalhe text,
+  updated_at timestamptz not null default now()
+);
+insert into bot_status (id, status) values ('saldaterra', 'ativo') on conflict (id) do nothing;
+```
+
+- Backend (`src/supabase.js` → `atualizarStatusBot()`, chamado de `src/whatsapp-client.js`): grava `status='ativo'` ao conectar, `status='problema'` (com `detalhe`) ao desconectar/perder sessão/aguardar QR, e um heartbeat de segurança a cada 60s independente dos eventos (se o processo travar sem disparar `connection.update`, o `updated_at` para de avançar).
+- Frontend (`web/src/hooks/useBotStatus.js` + `web/src/components/SemaforoBot.jsx`): lê a linha a cada 30s e calcula a cor:
+  - 🟢 verde — `status='ativo'` e heartbeat recente
+  - 🟡 amarelo — `status='problema'` mas processo ainda respondendo (heartbeat recente)
+  - 🔴 vermelho — sem heartbeat há mais de 3 minutos (processo parado/VPS fora do ar)
+- Aparece no header do Dashboard e da página de PGs, antes do botão "Atualizar" (↺).
+
 ---
 
 ## Histórico de implantação — 2026-07-30
@@ -122,3 +154,5 @@ Primeira implantação real em produção (VPS), a partir de um estado onde o bo
    - Identificação de admin/líder/visitante-já-cadastrado para contatos `@lid` continua limitada (esses fluxos comparam por número de telefone, e não há mapeamento lid→telefone disponível nesta versão do `whaileys`). Pendente para o futuro, se virar problema real.
 7. **Endpoint de teste adicionado:** `GET/POST /admin/mensagem/:telefone` (commits `66d324c`, `be5761b`) — envia uma mensagem de texto avulsa via `sendTextComFallback`, útil para testar conectividade sem depender de dados de líder/visitante no Supabase.
 8. Confirmado em produção: scheduler disparando lembretes diários para líderes, mensagens sendo recebidas e respondidas corretamente (inclusive de contatos `@lid` após a correção).
+9. **Semáforo de status do bot** (commit `4cea96a`): criada tabela `bot_status` no Supabase e implementado heartbeat (backend) + indicador colorido (frontend) no Dashboard — ver seção "Semáforo de status do bot" acima. Confirmado ao vivo: hash do bundle publicado no Netlify (`index-CTqG6Zfp.js`) idêntico ao build local, deploy automático funcionando.
+10. **Semáforo também na página de PGs** (commit `3aebe21`): componente e hook extraídos para `web/src/components/SemaforoBot.jsx` e `web/src/hooks/useBotStatus.js`, reaproveitados nas duas páginas. Confirmado ao vivo (`index-69dcoYDm.js`).
