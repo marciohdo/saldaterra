@@ -1,6 +1,6 @@
 require('./load-env');
 const express = require('express');
-const { sendText, sendTyping, markAsRead, sendTextComFallback, formatarTelefoneExibicao } = require('./whatsapp');
+const { sendText, sendTyping, markAsRead, sendTextComFallback, sendButtonsComFallback, formatarTelefoneExibicao } = require('./whatsapp');
 const { startWhatsApp } = require('./whatsapp-client');
 const { reply }             = require('./claude');
 const {
@@ -54,7 +54,7 @@ function telefoneDestino(telefoneReal) {
 
 const OPCAO_PARA_ACAO = {
   '⏳ Não respondeu ainda': 'esperando',
-  '📩 Convidei para o PG':  'convidado',
+  '📩 Contato feito':       'convidado',
   '✅ Está frequentando':   'frequentando',
   '🚫 Perfil não atende':   'nao_atende',
 };

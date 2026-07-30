@@ -135,21 +135,16 @@ async function dispararLembretes() {
         for (const v of lider.visitantes) {
           const corpo = formatarVisitanteParaLider(v);
           const statusV = (v.visitante_status ?? '').toLowerCase();
-          const botoes = statusV === 'convidado'
+          const botoes = statusV === 'esperando retorno'
             ? [
-                { text: '✅ Está frequentando',     id: `frequentando:${v.id}` },
-                { text: '🚫 Perfil não atende',     id: `nao_atende:${v.id}`   },
-              ]
-            : statusV === 'esperando retorno'
-            ? [
-                { text: '📩 Visitante foi convidado', id: `convidado:${v.id}`   },
-                { text: '📵 Não atende o contato',    id: `esperando:${v.id}`   },
-                { text: '🚫 Perfil não atende',       id: `nao_atende:${v.id}`  },
+                { text: '📩 Contato feito',        id: `convidado:${v.id}`   },
+                { text: '📵 Não atende o contato', id: `esperando:${v.id}`   },
+                { text: '🚫 Perfil não atende',    id: `nao_atende:${v.id}`  },
               ]
             : [
-                { text: '⏳ Não respondeu ainda',   id: `esperando:${v.id}`   },
-                { text: '📩 Convidei para o PG',    id: `convidado:${v.id}`   },
-                { text: '🚫 Perfil não atende',     id: `nao_atende:${v.id}`  },
+                { text: '⏳ Não respondeu ainda',  id: `esperando:${v.id}`   },
+                { text: '📩 Contato feito',        id: `convidado:${v.id}`   },
+                { text: '🚫 Perfil não atende',    id: `nao_atende:${v.id}`  },
               ];
           await sendButtonsComFallback(lider.telefone, corpo, botoes);
 
@@ -179,7 +174,21 @@ async function dispararLembretes() {
   }
 }
 
+function dentroJanela() {
+  const hora = new Date().toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: 'numeric',
+    hour12: false,
+  });
+  const h = parseInt(hora, 10);
+  return h >= 8 && h < 20;
+}
+
 async function verificarEDisparar() {
+  if (!dentroJanela()) {
+    log('Fora da janela de envio (08h–20h) — aguardando próxima verificação.');
+    return;
+  }
   const dataHoje = hoje();
   // Cache em memória para evitar leitura de arquivo a cada hora
   if (ultimoEnvio === dataHoje) return;
@@ -230,21 +239,16 @@ async function dispararLembretesLider(telefone) {
       for (const v of lider.visitantes) {
         const corpo = formatarVisitanteParaLider(v);
         const statusV = (v.visitante_status ?? '').toLowerCase();
-        const botoes = statusV === 'convidado'
+        const botoes = statusV === 'esperando retorno'
           ? [
-              { text: '✅ Está frequentando',     id: `frequentando:${v.id}` },
-              { text: '🚫 Perfil não atende',     id: `nao_atende:${v.id}`   },
-            ]
-          : statusV === 'esperando retorno'
-          ? [
-              { text: '📩 Visitante foi convidado', id: `convidado:${v.id}`  },
-              { text: '📵 Não atende o contato',    id: `esperando:${v.id}`  },
-              { text: '🚫 Perfil não atende',       id: `nao_atende:${v.id}` },
+              { text: '📩 Contato feito',        id: `convidado:${v.id}`  },
+              { text: '📵 Não atende o contato', id: `esperando:${v.id}`  },
+              { text: '🚫 Perfil não atende',    id: `nao_atende:${v.id}` },
             ]
           : [
-              { text: '⏳ Não respondeu ainda',   id: `esperando:${v.id}`  },
-              { text: '📩 Convidei para o PG',    id: `convidado:${v.id}`  },
-              { text: '🚫 Perfil não atende',     id: `nao_atende:${v.id}` },
+              { text: '⏳ Não respondeu ainda',  id: `esperando:${v.id}`  },
+              { text: '📩 Contato feito',        id: `convidado:${v.id}`  },
+              { text: '🚫 Perfil não atende',    id: `nao_atende:${v.id}` },
             ];
         await sendButtonsComFallback(lider.telefone, corpo, botoes);
         logMensagemLider({
