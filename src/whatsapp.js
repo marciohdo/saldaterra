@@ -1,6 +1,8 @@
 const { getSocket } = require('./whatsapp-client');
 
 function toJid(number) {
+  // Já é um JID completo (ex: numero@s.whatsapp.net ou id@lid) — não reconstruir a partir dos dígitos.
+  if (number.includes('@')) return number;
   const clean = number.replace(/\D/g, '');
   return `${clean}@s.whatsapp.net`;
 }
