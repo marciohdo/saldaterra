@@ -12,6 +12,21 @@ const HEADERS = {
 const { determinarPerfil }    = require('./perfil');
 const { distanciaVisitantePG } = require('./maps');
 
+// Heartbeat de status do bot, lido pelo semáforo do dashboard (tabela bot_status)
+async function atualizarStatusBot(status, detalhe = null) {
+  const url = `${BASE}/rest/v1/bot_status?id=eq.saldaterra`;
+  try {
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: HEADERS,
+      body: JSON.stringify({ status, detalhe, updated_at: new Date().toISOString() }),
+    });
+    if (!res.ok) console.error(`[supabase] Falha ao atualizar status do bot: ${res.status} ${await res.text()}`);
+  } catch (err) {
+    console.error('[supabase] Falha ao atualizar status do bot:', err.message);
+  }
+}
+
 async function inserirVisitante(dados) {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS`;
   console.log('[supabase] POST', url);
@@ -344,4 +359,5 @@ module.exports = {
   buscarVisitanteComPGAtivo,
   buscarRelatorioVisitantesSemRetorno,
   buscarRelatorioLideresAtendimentoParado,
+  atualizarStatusBot,
 };

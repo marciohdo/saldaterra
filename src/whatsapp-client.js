@@ -7,14 +7,27 @@ const {
 } = require('whaileys');
 const { Boom } = require('@hapi/boom');
 const pino = require('pino');
+const { atualizarStatusBot } = require('./supabase');
 
 const logger = pino({ level: 'silent' });
 
 let sock = null;
 let connectedOnce = false;
+let heartbeatIniciado = false;
 
 function getSocket() {
   return sock;
+}
+
+// Heartbeat de segurança: se o processo cair por completo, updated_at para
+// de avançar e o dashboard passa a mostrar "vermelho" mesmo sem um evento explícito.
+function iniciarHeartbeat() {
+  if (heartbeatIniciado) return;
+  heartbeatIniciado = true;
+  setInterval(() => {
+    const conectado = !!sock?.user;
+    atualizarStatusBot(conectado ? 'ativo' : 'problema', conectado ? null : 'Socket WhatsApp desconectado');
+  }, 60 * 1000);
 }
 
 async function startWhatsApp({ onMessage, onPoll, onVoice, onConnected }) {
@@ -38,12 +51,16 @@ async function startWhatsApp({ onMessage, onPoll, onVoice, onConnected }) {
 
   sock.ev.on('creds.update', saveCreds);
 
+  iniciarHeartbeat();
+
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
       console.log('\n📱 Escaneie o QR Code acima com seu WhatsApp!\n');
+      atualizarStatusBot('problema', 'Aguardando escaneamento do QR Code');
     }
     if (connection === 'open') {
       console.log('✅ WhatsApp conectado com sucesso!\n');
+      atualizarStatusBot('ativo');
       if (!connectedOnce) {
         connectedOnce = true;
         onConnected?.();
@@ -56,9 +73,11 @@ async function startWhatsApp({ onMessage, onPoll, onVoice, onConnected }) {
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
       if (shouldReconnect) {
         console.log('[whatsapp] Reconectando em 3s...');
+        atualizarStatusBot('problema', `Conexão encerrada (código ${statusCode}), reconectando...`);
         setTimeout(() => startWhatsApp({ onMessage, onPoll, onVoice, onConnected }), 3000);
       } else {
         console.log('[whatsapp] Sessão encerrada. Delete data/auth_info e reinicie para reconectar.');
+        atualizarStatusBot('problema', 'Sessão do WhatsApp encerrada — necessário reconectar via QR Code');
       }
     }
   });
