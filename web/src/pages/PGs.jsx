@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import SemaforoBot from '../components/SemaforoBot'
+import { useBotStatus } from '../hooks/useBotStatus'
 
 const URL  = import.meta.env.VITE_SUPABASE_URL
 const KEY  = import.meta.env.VITE_SUPABASE_KEY
@@ -35,6 +37,7 @@ export default function PGs() {
   const [loading, setLoading] = useState(true)
   const [erro,    setErro]    = useState('')
   const [busca,   setBusca]   = useState('')
+  const botStatus = useBotStatus()
   const nav = useNavigate()
 
   useEffect(() => {
@@ -160,6 +163,7 @@ export default function PGs() {
           >
             Análises
           </button>
+          <SemaforoBot botStatus={botStatus} />
           <button
             onClick={fetchPGs}
             className="bg-blue-700 hover:bg-blue-600 border border-blue-400 text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
