@@ -92,7 +92,12 @@ async function startWhatsApp({ onMessage, onPoll, onVoice, onConnected }) {
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid.endsWith('@g.us')) continue;
 
-      const phone = remoteJid.replace('@s.whatsapp.net', '');
+      // Quando o remetente está com a privacidade de número ativada, o WhatsApp
+      // envia remoteJid como "<id>@lid" em vez de "<numero>@s.whatsapp.net".
+      // Nesse caso o número real vem em msg.key.senderPn — sem isso, o replace
+      // abaixo não encontra "@s.whatsapp.net" e o telefone fica salvo como "<id>@lid".
+      const phoneJid = remoteJid.endsWith('@lid') && msg.key.senderPn ? msg.key.senderPn : remoteJid;
+      const phone = phoneJid.replace('@s.whatsapp.net', '');
       const messageId = msg.key.id;
       const m = msg.message;
 
