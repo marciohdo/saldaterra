@@ -4,7 +4,6 @@ const path = require('path');
 const {
   buscarVisitantesSemContato,
   buscarVisitantePorId,
-  buscarVisitantesAtivos,
 } = require('./supabase');
 const { sendTextComFallback, sendButtonsComFallback, formatarTelefoneExibicao } = require('./whatsapp');
 const { redirecionarVisitante } = require('./redirecionamento');
@@ -298,54 +297,4 @@ async function enviarLembreteExemplo(telefoneDestino, visitanteId) {
   return { visitante: v.visitante_nome, lider: v.lider };
 }
 
-// Reenvio corretivo: manda o lembrete (saudação + botões) para TODOS os líderes com
-// visitante em status ATIVO, sem filtro de data — usado após o bug do telefone "@lid"
-// para garantir que os líderes recebam o aviso com o número já corrigido.
-async function dispararLembretesExtra() {
-  log('Envio extra: buscando visitantes com status ATIVO...');
-  const visitantes = await buscarVisitantesAtivos();
-  if (!visitantes.length) {
-    log('Nenhum visitante ATIVO encontrado.');
-    return { visitantes: 0, lideres: 0, detalhes: [] };
-  }
-
-  const lideres = agruparPorLider(visitantes);
-  log(`Envio extra: ${visitantes.length} visitante(s) em ${lideres.length} líder(es).`);
-
-  const detalhes = [];
-  for (const lider of lideres) {
-    try {
-      const saudacao =
-        `Oi líder ${lider.nome}! 😊 Tivemos uma falha técnica que fez alguns avisos não chegarem corretamente. ` +
-        `Segue de novo a lista de visitante(s) aguardando contato — para cada um, é só selecionar o status abaixo 👇`;
-      await sendTextComFallback(lider.telefone, saudacao);
-
-      for (const v of lider.visitantes) {
-        const corpo = formatarVisitanteParaLider(v);
-        const botoes = [
-          { text: '⏳ Não respondeu ainda',  id: `esperando:${v.id}`   },
-          { text: '📩 Contato feito',        id: `convidado:${v.id}`   },
-          { text: '🚫 Perfil não atende',    id: `nao_atende:${v.id}`  },
-        ];
-        await sendButtonsComFallback(lider.telefone, corpo, botoes);
-        logMensagemLider({
-          liderNome:     lider.nome,
-          liderTelefone: lider.telefone,
-          tipo:          'lembrete_extra',
-          visitanteNome: v.visitante_nome,
-          visitanteId:   v.id,
-          mensagem:      corpo,
-        });
-      }
-      log(`Envio extra concluído para ${lider.nome} (${lider.telefone}) — ${lider.visitantes.length} visitante(s)`);
-      detalhes.push({ lider: lider.nome, telefone: lider.telefone, visitantes: lider.visitantes.length, ok: true });
-    } catch (err) {
-      log(`Erro no envio extra para ${lider.nome}: ${err.message}`);
-      detalhes.push({ lider: lider.nome, telefone: lider.telefone, erro: err.message, ok: false });
-    }
-  }
-
-  return { visitantes: visitantes.length, lideres: lideres.length, detalhes };
-}
-
-module.exports = { iniciar, dispararLembretes, dispararLembretesLider, enviarLembreteExemplo, dispararLembretesExtra };
+module.exports = { iniciar, dispararLembretes, dispararLembretesLider, enviarLembreteExemplo };
