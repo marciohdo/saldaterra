@@ -593,20 +593,6 @@ async function handleMensagemAdmin(req, res) {
 app.get('/admin/mensagem/:telefone', handleMensagemAdmin);
 app.post('/admin/mensagem/:telefone', handleMensagemAdmin);
 
-// Envia um exemplo do lembrete (saudação + botões) para um número, usando um visitante real como amostra
-async function handleLembreteExemploAdmin(req, res) {
-  try {
-    const visitanteId = req.query.visitanteId || req.body?.visitanteId;
-    if (!visitanteId) return res.status(400).json({ error: 'Parâmetro visitanteId é obrigatório' });
-    const resultado = await scheduler.enviarLembreteExemplo(req.params.telefone, visitanteId);
-    res.json({ ok: true, ...resultado });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
-app.get('/admin/lembrete-exemplo/:telefone', handleLembreteExemploAdmin);
-app.post('/admin/lembrete-exemplo/:telefone', handleLembreteExemploAdmin);
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\nServidor rodando na porta ${PORT}`);

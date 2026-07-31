@@ -269,32 +269,4 @@ async function dispararLembretesLider(telefone) {
   }
 }
 
-// Envia um exemplo do lembrete (saudação + botões) para um número qualquer,
-// usando os dados reais de um visitante — só para conferência visual, não grava log de lembrete.
-async function enviarLembreteExemplo(telefoneDestino, visitanteId) {
-  const v = await buscarVisitantePorId(visitanteId);
-  if (!v) throw new Error(`Visitante ${visitanteId} não encontrado`);
-
-  const saudacao =
-    `[EXEMPLO] Oi líder ${v.lider}! 😊 Passando para lembrar que você tem visitante(s) aguardando.\n` +
-    `Para cada um, é só selecionar o status abaixo 👇`;
-  await sendTextComFallback(telefoneDestino, saudacao);
-
-  const corpo = formatarVisitanteParaLider(v);
-  const statusV = (v.visitante_status ?? '').toLowerCase();
-  const botoes = statusV === 'esperando retorno'
-    ? [
-        { text: '📩 Contato feito',        id: `convidado:${v.id}`   },
-        { text: '📵 Não atende o contato', id: `esperando:${v.id}`   },
-        { text: '🚫 Perfil não atende',    id: `nao_atende:${v.id}`  },
-      ]
-    : [
-        { text: '⏳ Não respondeu ainda',  id: `esperando:${v.id}`   },
-        { text: '📩 Contato feito',        id: `convidado:${v.id}`   },
-        { text: '🚫 Perfil não atende',    id: `nao_atende:${v.id}`  },
-      ];
-  await sendButtonsComFallback(telefoneDestino, corpo, botoes);
-  return { visitante: v.visitante_nome, lider: v.lider };
-}
-
-module.exports = { iniciar, dispararLembretes, dispararLembretesLider, enviarLembreteExemplo };
+module.exports = { iniciar, dispararLembretes, dispararLembretesLider };
