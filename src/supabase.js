@@ -284,6 +284,19 @@ async function buscarVisitantesSemContato() {
   return res.json();
 }
 
+// Retorna visitantes com status exatamente ATIVO, sem filtro de data (usado em reenvios extras/corretivos)
+async function buscarVisitantesAtivos() {
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
+    `?visitante_status=eq.ATIVO` +
+    `&lider_telefone=not.is.null` +
+    `&lider_telefone=neq.` +
+    `&select=id,visitante_nome,visitante_telefone,visitante_idade,visitante_bairro,visitante_status,lider,lider_telefone,visitante_data_contato` +
+    `&order=lider_telefone.asc`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 // Retorna o registro ativo mais recente de um visitante (status diferente dos terminais)
 // Usado para evitar duplo encaminhamento
 async function buscarVisitanteComPGAtivo(telefone) {
@@ -355,6 +368,7 @@ module.exports = {
   verificarLider,
   buscarVisitantesDoLider,
   buscarVisitantesSemContato,
+  buscarVisitantesAtivos,
   atualizarStatusVisitante,
   buscarVisitanteComPGAtivo,
   buscarRelatorioVisitantesSemRetorno,

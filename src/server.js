@@ -607,6 +607,18 @@ async function handleLembreteExemploAdmin(req, res) {
 app.get('/admin/lembrete-exemplo/:telefone', handleLembreteExemploAdmin);
 app.post('/admin/lembrete-exemplo/:telefone', handleLembreteExemploAdmin);
 
+// Reenvio corretivo do lembrete para todos os líderes com visitante em status ATIVO
+async function handleLembreteExtraAdmin(_req, res) {
+  try {
+    const resultado = await scheduler.dispararLembretesExtra();
+    res.json({ ok: true, ...resultado });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+app.get('/admin/lembrete-extra', handleLembreteExtraAdmin);
+app.post('/admin/lembrete-extra', handleLembreteExtraAdmin);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\nServidor rodando na porta ${PORT}`);
