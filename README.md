@@ -195,6 +195,16 @@ O scheduler (`src/scheduler.js`) roda automaticamente junto com o servidor e env
 
 Cada visitante é enviado com nome, telefone, idade e bairro, seguido de botões de ação.
 
+### Check-in de 15 dias (visitantes convidados)
+
+Visitantes com status `convidado` não entram nos lembretes diários acima (o líder já cumpriu a parte dele). Em vez disso, o scheduler roda diariamente uma verificação à parte: quando se completam **15 dias corridos ou mais** desde `visitante_data_contato`, o líder recebe uma pergunta única sobre a frequência, com 3 botões. Cada visitante recebe esse check-in **uma única vez** (controlado pelo histórico de logs, não por um campo no banco), então não há reenvio diário caso o líder não responda.
+
+| Botão | Ação |
+|---|---|
+| 😕 Ainda não apareceu | Mantém status `convidado` (sem novo check-in automático) |
+| ❌ Desistiu | Atualiza status para `desistiu` (encerra o caso) |
+| ✅ Frequentando | Atualiza status para `frequentando` |
+
 ---
 
 ## Redirecionamento automático

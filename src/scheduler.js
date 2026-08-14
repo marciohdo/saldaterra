@@ -3,6 +3,7 @@ const fs   = require('fs');
 const path = require('path');
 const {
   buscarVisitantesSemContato,
+  buscarVisitantesConvidados,
   buscarVisitantePorId,
 } = require('./supabase');
 const { sendTextComFallback, sendButtonsComFallback, formatarTelefoneExibicao } = require('./whatsapp');
@@ -29,7 +30,10 @@ function hojeISO() {
   }).split('/').reverse().join('-');
 }
 
-// Verifica no arquivo de log do dia se já houve um disparo de lembrete
+// Tipos de log que indicam que a rotina diária (lembretes + check-in de 15 dias) já rodou hoje
+const TIPOS_ROTINA_DIARIA = new Set(['lembrete', 'checkin_15dias']);
+
+// Verifica no arquivo de log do dia se já houve um disparo da rotina diária
 function jaEnviouHojeNoLog() {
   try {
     const arquivo = path.join(LOG_DIR, `lideres-${hojeISO()}.log`);
@@ -37,11 +41,45 @@ function jaEnviouHojeNoLog() {
     const conteudo = fs.readFileSync(arquivo, 'utf8');
     return conteudo.split('\n').some(linha => {
       if (!linha.trim()) return false;
-      try { return JSON.parse(linha).tipo === 'lembrete'; } catch { return false; }
+      try { return TIPOS_ROTINA_DIARIA.has(JSON.parse(linha).tipo); } catch { return false; }
     });
   } catch {
     return false;
   }
+}
+
+// Converte "DD/MM/YYYY" ou "DD/MM/YYYY, HH:MM:SS" para dias corridos desde o contato até hoje
+function diasDesdeContato(dataContato) {
+  const [dataParte] = (dataContato ?? '').split(',');
+  const [d, m, y] = dataParte.trim().split('/').map(Number);
+  if (!d || !m || !y) return null;
+  const dataRef = new Date(y, m - 1, d);
+
+  const [hd, hm, hy] = hoje().split('/').map(Number);
+  const hojeRef = new Date(hy, hm - 1, hd);
+
+  return Math.round((hojeRef - dataRef) / 86_400_000);
+}
+
+// Varre todos os logs diários e retorna o conjunto de IDs de visitante que já
+// receberam o check-in de 15 dias alguma vez — evita reenvio em dias seguintes
+// (cobre tanto o backlog de casos antigos quanto retentativa se o envio falhar)
+function idsComCheckinEnviado() {
+  const enviados = new Set();
+  try {
+    const arquivos = fs.readdirSync(LOG_DIR).filter(f => f.startsWith('lideres-') && f.endsWith('.log'));
+    for (const arquivo of arquivos) {
+      const conteudo = fs.readFileSync(path.join(LOG_DIR, arquivo), 'utf8');
+      for (const linha of conteudo.split('\n')) {
+        if (!linha.trim()) continue;
+        try {
+          const obj = JSON.parse(linha);
+          if (obj.tipo === 'checkin_15dias' && obj.visitanteId != null) enviados.add(obj.visitanteId);
+        } catch { /* linha inválida, ignora */ }
+      }
+    }
+  } catch { /* sem diretório de logs ainda */ }
+  return enviados;
 }
 
 function log(msg) {
@@ -175,6 +213,63 @@ async function dispararLembretes() {
   }
 }
 
+// Check-in de 15 dias — visitantes com status "convidado" há 15 dias ou mais
+// desde visitante_data_contato recebem uma pergunta ao líder sobre a frequência.
+// Cada visitante recebe o check-in uma única vez (controlado via idsComCheckinEnviado).
+async function dispararCheckInConvidados() {
+  log('Verificando convidados para check-in de 15 dias...');
+  try {
+    const convidados = await buscarVisitantesConvidados();
+    const jaEnviados = idsComCheckinEnviado();
+    const alvos = convidados.filter(v => {
+      const dias = diasDesdeContato(v.visitante_data_contato);
+      return dias !== null && dias >= 15 && !jaEnviados.has(v.id);
+    });
+
+    if (!alvos.length) {
+      log('Nenhum convidado pendente de check-in de 15 dias.');
+      return;
+    }
+
+    const lideres = agruparPorLider(alvos);
+    log(`${alvos.length} convidado(s) com 15+ dias pendentes de check-in em ${lideres.length} líder(es).`);
+
+    for (const lider of lideres) {
+      try {
+        for (const v of lider.visitantes) {
+          const partes = [];
+          if (v.visitante_telefone) partes.push(`📱 ${formatarTelefoneExibicao(v.visitante_telefone)}`);
+          if (v.visitante_idade)    partes.push(`${v.visitante_idade} anos`);
+          if (v.visitante_bairro)   partes.push(`📍 ${v.visitante_bairro}`);
+          const info  = partes.length ? partes.join(' | ') + '\n' : '';
+          const dias  = diasDesdeContato(v.visitante_data_contato);
+          const corpo = `${v.visitante_nome}\n${info}Já se passaram ${dias} dias desde o convite. Como está a situação?`;
+
+          await sendButtonsComFallback(lider.telefone, corpo, [
+            { text: '😕 Ainda não apareceu', id: `ainda_nao_apareceu:${v.id}` },
+            { text: '❌ Desistiu',           id: `desistiu:${v.id}`           },
+            { text: '✅ Frequentando',       id: `frequentando:${v.id}`       },
+          ]);
+
+          logMensagemLider({
+            liderNome:     lider.nome,
+            liderTelefone: lider.telefone,
+            tipo:          'checkin_15dias',
+            visitanteNome: v.visitante_nome,
+            visitanteId:   v.id,
+            mensagem:      corpo,
+          });
+        }
+        log(`Check-in de 15 dias enviado para líder ${lider.nome} (${lider.telefone}) — ${lider.visitantes.length} visitante(s)`);
+      } catch (err) {
+        log(`Erro ao enviar check-in de 15 dias para ${lider.nome}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    log(`Erro ao buscar convidados para check-in: ${err.message}`);
+  }
+}
+
 function dentroJanela() {
   const hora = new Date().toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
@@ -200,6 +295,7 @@ async function verificarEDisparar() {
     return;
   }
   await dispararLembretes();
+  await dispararCheckInConvidados();
   ultimoEnvio = dataHoje; // marca só após completar
 }
 
@@ -270,4 +366,4 @@ async function dispararLembretesLider(telefone) {
   }
 }
 
-module.exports = { iniciar, dispararLembretes, dispararLembretesLider };
+module.exports = { iniciar, dispararLembretes, dispararLembretesLider, dispararCheckInConvidados };

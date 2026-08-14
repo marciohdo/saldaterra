@@ -21,6 +21,7 @@ const STATUS_CORES = {
   'convidado':           '#f59e0b',
   'frequentando':        '#10b981',
   'não atende':          '#ef4444',
+  'desistiu':            '#ef4444',
   'lotado':              '#f97316',
   'numero_inexistente':  '#9ca3af',
   'esperando retorno':   '#8b5cf6',
@@ -31,6 +32,7 @@ const STATUS_LABELS = {
   'convidado':          'Convidado',
   'frequentando':       'Frequentando',
   'não atende':         'Não Atende',
+  'desistiu':           'Desistiu',
   'lotado':             'Lotado',
   'numero_inexistente': 'Nº Inexistente',
   'esperando retorno':  'Aguardando',
@@ -125,7 +127,7 @@ export default function Dashboard() {
 
   // Top líderes com visitantes pendentes (alinhado com buscarVisitantesDoLider)
   // 'convidado' é excluído: líder já cumpriu seu papel, aguarda o visitante
-  const STATUS_TERMINAL = new Set(['frequentando', 'não atende', 'lotado', 'numero_inexistente', 'convidado', 'perfil não atende'])
+  const STATUS_TERMINAL = new Set(['frequentando', 'não atende', 'lotado', 'numero_inexistente', 'convidado', 'perfil não atende', 'desistiu'])
   const pendentesPorLider = {}
   for (const d of dados) {
     const s = (d.visitante_status ?? '').toLowerCase()

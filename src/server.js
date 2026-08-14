@@ -148,7 +148,7 @@ setInterval(async () => {
 }, 30_000);
 
 // Detecta row IDs de listas interativas enviadas pelo bot (ex: "convidado:123")
-const ROW_ID_RE = /^(esperando|nao_atende|convidado|frequentando|tentativa_1|tentativa_2|tentativa_3):\d+$/;
+const ROW_ID_RE = /^(esperando|nao_atende|convidado|frequentando|tentativa_1|tentativa_2|tentativa_3|ainda_nao_apareceu|desistiu):\d+$/;
 
 async function handleIncomingVoice(phone, remoteJid, messageId) {
   markAsRead(remoteJid, messageId);
@@ -328,6 +328,17 @@ async function handleListResponse(phone, rowId, liderInfo) {
         });
         log(phone, `Visitante ID ${id} → frequentando (lista)`);
         confirmacao = `Aleluia! 🙌 Que alegria saber que ${v.visitante_nome} está frequentando o PG! Deus abençoe essa jornada! 🙏`;
+        break;
+      }
+      case 'ainda_nao_apareceu': {
+        log(phone, `Visitante ID ${id} → convidado, ainda não apareceu (check-in 15 dias)`);
+        confirmacao = `Entendido! 😊 Continua sendo importante o convite para ${v.visitante_nome}. Qualquer novidade, pode me contar por aqui!`;
+        break;
+      }
+      case 'desistiu': {
+        await atualizarStatusVisitante(id, { visitante_status: 'desistiu' });
+        log(phone, `Visitante ID ${id} → desistiu (check-in 15 dias)`);
+        confirmacao = `Entendido, obrigado por avisar. 🙏 Registrei que ${v.visitante_nome} não vai mais participar por enquanto.`;
         break;
       }
       default:

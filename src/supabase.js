@@ -220,7 +220,7 @@ async function buscarVisitantesDoLider(liderTelefone) {
 
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
     `?or=(${orClause})` +
-    `&visitante_status=not.in.(frequentando,não atende,perfil não atende,lotado,numero_inexistente,convidado)` +
+    `&visitante_status=not.in.(frequentando,não atende,perfil não atende,lotado,numero_inexistente,convidado,desistiu)` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_ini,visitante_data_fim,visitante_cidade,visitante_bairro` +
     `&order=id.desc`;
   const res = await fetch(url, { headers: HEADERS });
@@ -274,7 +274,20 @@ async function buscarPGPorProximidade(cidade, bairro, endereco, excluirLideres =
 // Retorna visitantes com status ATIVO (sem contato do líder) agrupados por líder
 async function buscarVisitantesSemContato() {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
-    `?visitante_status=not.in.(frequentando,não atende,perfil não atende,lotado,numero_inexistente,convidado)` +
+    `?visitante_status=not.in.(frequentando,não atende,perfil não atende,lotado,numero_inexistente,convidado,desistiu)` +
+    `&lider_telefone=not.is.null` +
+    `&lider_telefone=neq.` +
+    `&select=id,visitante_nome,visitante_telefone,visitante_idade,visitante_bairro,visitante_status,lider,lider_telefone,visitante_data_contato` +
+    `&order=lider_telefone.asc`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// Retorna visitantes com status "convidado" (para o check-in de 15 dias) agrupados por líder
+async function buscarVisitantesConvidados() {
+  const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
+    `?visitante_status=eq.convidado` +
     `&lider_telefone=not.is.null` +
     `&lider_telefone=neq.` +
     `&select=id,visitante_nome,visitante_telefone,visitante_idade,visitante_bairro,visitante_status,lider,lider_telefone,visitante_data_contato` +
@@ -290,7 +303,7 @@ async function buscarVisitanteComPGAtivo(telefone) {
   const tel = encodeURIComponent(telefone);
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
     `?visitante_telefone=eq.${tel}` +
-    `&visitante_status=not.in.(frequentando,não atende,perfil não atende,lotado,numero_inexistente)` +
+    `&visitante_status=not.in.(frequentando,não atende,perfil não atende,lotado,numero_inexistente,desistiu)` +
     `&select=id,visitante_nome,lider,lider_telefone,visitante_status` +
     `&order=id.desc&limit=1`;
   const res = await fetch(url, { headers: HEADERS });
@@ -302,7 +315,7 @@ async function buscarVisitanteComPGAtivo(telefone) {
 // Relatório 1: todos os visitantes ativos/pendentes (sem retorno do líder)
 async function buscarRelatorioVisitantesSemRetorno() {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
-    `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
+    `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente,desistiu)` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_contato,lider,lider_telefone,Data_atu` +
     `&order=visitante_data_contato.asc`;
   const res = await fetch(url, { headers: HEADERS });
@@ -313,7 +326,7 @@ async function buscarRelatorioVisitantesSemRetorno() {
 // Relatório 2: líderes agrupados com visitantes pendentes
 async function buscarRelatorioLideresAtendimentoParado() {
   const url = `${BASE}/rest/v1/LISTA_ACIONAMENTOS` +
-    `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente)` +
+    `?visitante_status=not.in.(frequentando,não atende,lotado,numero_inexistente,desistiu)` +
     `&lider_telefone=not.is.null` +
     `&lider_telefone=neq.` +
     `&select=id,visitante_nome,visitante_telefone,visitante_status,visitante_data_contato,Data_atu,lider,lider_telefone` +
@@ -355,6 +368,7 @@ module.exports = {
   verificarLider,
   buscarVisitantesDoLider,
   buscarVisitantesSemContato,
+  buscarVisitantesConvidados,
   atualizarStatusVisitante,
   buscarVisitanteComPGAtivo,
   buscarRelatorioVisitantesSemRetorno,
