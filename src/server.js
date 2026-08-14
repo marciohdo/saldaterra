@@ -604,18 +604,6 @@ async function handleMensagemAdmin(req, res) {
 app.get('/admin/mensagem/:telefone', handleMensagemAdmin);
 app.post('/admin/mensagem/:telefone', handleMensagemAdmin);
 
-// Envia um exemplo do check-in de 15 dias (texto + botões) para um número, só para conferência visual
-async function handleCheckinExemploAdmin(req, res) {
-  try {
-    const resultado = await scheduler.enviarCheckInExemplo(req.params.telefone);
-    res.json({ ok: true, ...resultado });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
-app.get('/admin/checkin-exemplo/:telefone', handleCheckinExemploAdmin);
-app.post('/admin/checkin-exemplo/:telefone', handleCheckinExemploAdmin);
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\nServidor rodando na porta ${PORT}`);
