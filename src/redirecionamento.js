@@ -109,7 +109,7 @@ async function redirecionarVisitante(idLinhaAtual, v, identificador, statusParaG
         lider:                  pg.LIDER,
         lider_telefone:         pg.CONTATO,
         visitante_status:       'ATIVO',
-        visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
+        visitante_data_contato: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
         Data_atu:               new Date().toISOString(),
       });
       const novoId = novoReg?.[0]?.id ?? null;

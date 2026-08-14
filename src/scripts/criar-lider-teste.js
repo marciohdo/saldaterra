@@ -58,7 +58,7 @@ async function main() {
     lider:                  'LIDER_TESTE',
     lider_telefone:         '34996689999',
     visitante_status:       'ATIVO',
-    visitante_data_contato: (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toLocaleDateString('pt-BR'); })(),
+    visitante_data_contato: (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }); })(),
     Data_atu:               new Date().toISOString(),
     visitante_cidade:       'Uberlândia',
     visitante_bairro:       'Centro',

@@ -43,8 +43,8 @@ const MENU_BOTOES = [
 
 function formatarData(valor) {
   if (!valor) return '—';
-  // Suporta "DD/MM/YYYY" direto ou ISO
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(valor)) return valor;
+  // Suporta "DD/MM/YYYY" ou "DD/MM/YYYY, HH:MM:SS" direto, ou ISO
+  if (/^\d{2}\/\d{2}\/\d{4}(, \d{2}:\d{2}:\d{2})?$/.test(valor)) return valor;
   try { return new Date(valor).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }); }
   catch { return valor; }
 }

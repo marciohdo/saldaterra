@@ -498,7 +498,7 @@ async function handleVisitante(phone, text) {
             visitante_endereco:     json.endereco,
             visitante_bairro:       json.bairro,
             visitante_cidade:       json.cidade,
-            visitante_data_contato: new Date().toLocaleDateString('pt-BR'),
+            visitante_data_contato: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
             visitante_status:       'ATIVO',
             Data_atu:               new Date().toISOString(),
           };

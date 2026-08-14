@@ -110,8 +110,9 @@ async function dispararLembretes() {
     }
 
     // Só notifica visitantes cadastrados em dias anteriores — se foi hoje, o líder acabou de ser avisado
+    // (compara só a parte "DD/MM/YYYY" pois visitante_data_contato agora também guarda a hora)
     const dataHoje = hoje();
-    const visitantes = todos.filter(v => v.visitante_data_contato !== dataHoje);
+    const visitantes = todos.filter(v => v.visitante_data_contato?.slice(0, 10) !== dataHoje);
     const ignorados  = todos.length - visitantes.length;
 
     if (ignorados) log(`${ignorados} visitante(s) cadastrado(s) hoje ignorado(s).`);
