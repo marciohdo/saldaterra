@@ -160,7 +160,7 @@ Ao coletar todas as respostas:
 - Salva o visitante em `LISTA_ACIONAMENTOS` com líder atribuído
 - Notifica o líder via WhatsApp com os dados do visitante
 
-**Lembrete automático:** se o visitante não responder em 2 minutos, o bot envia até 3 lembretes espaçados. No encerramento, limpa o histórico da conversa.
+**Lembrete automático:** se o visitante não responder em 2 minutos, o bot envia até 2 lembretes espaçados. No encerramento, limpa o histórico da conversa.
 
 ---
 

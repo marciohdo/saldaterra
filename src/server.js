@@ -117,7 +117,7 @@ async function getLiderInfo(phone) {
 
 // Contador de lembretes por visitante
 const lembreteCount = new Map();
-const MAX_LEMBRETES = 3;
+const MAX_LEMBRETES = 2;
 
 // Lembrete automático — dispara se visitante ficou 2 min sem responder
 setInterval(async () => {
