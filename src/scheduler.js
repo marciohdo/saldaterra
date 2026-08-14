@@ -366,4 +366,20 @@ async function dispararLembretesLider(telefone) {
   }
 }
 
-module.exports = { iniciar, dispararLembretes, dispararLembretesLider, dispararCheckInConvidados };
+// Envia um exemplo do check-in de 15 dias (texto + botões) para um número qualquer,
+// usando um ID fictício — só para conferência visual, não grava log nem altera dado real.
+async function enviarCheckInExemplo(telefoneDestino) {
+  const idExemplo = 999999; // não corresponde a nenhum visitante real
+  const corpo =
+    `[EXEMPLO] Maria da Silva\n📱 34999998888 | 29 anos | 📍 Centro\n` +
+    `Já se passaram 15 dias desde o convite. Como está a situação?`;
+
+  await sendButtonsComFallback(telefoneDestino, corpo, [
+    { text: '😕 Ainda não apareceu', id: `ainda_nao_apareceu:${idExemplo}` },
+    { text: '❌ Desistiu',           id: `desistiu:${idExemplo}`           },
+    { text: '✅ Frequentando',       id: `frequentando:${idExemplo}`       },
+  ]);
+  return { destino: telefoneDestino };
+}
+
+module.exports = { iniciar, dispararLembretes, dispararLembretesLider, dispararCheckInConvidados, enviarCheckInExemplo };
