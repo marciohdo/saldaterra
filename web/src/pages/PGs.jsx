@@ -163,6 +163,12 @@ export default function PGs() {
           >
             Análises
           </button>
+          <button
+            onClick={() => nav('/crm')}
+            className="bg-blue-700 hover:bg-blue-600 border border-blue-400 text-white px-4 py-1.5 rounded-lg text-sm transition-colors"
+          >
+            CRM
+          </button>
           <SemaforoBot botStatus={botStatus} />
           <button
             onClick={fetchPGs}
