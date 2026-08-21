@@ -133,6 +133,7 @@ insert into bot_status (id, status) values ('saldaterra', 'ativo') on conflict (
 ```
 
 - Backend (`src/supabase.js` → `atualizarStatusBot()`, chamado de `src/whatsapp-client.js`): grava `status='ativo'` ao conectar, `status='problema'` (com `detalhe`) ao desconectar/perder sessão/aguardar QR, e um heartbeat de segurança a cada 60s independente dos eventos (se o processo travar sem disparar `connection.update`, o `updated_at` para de avançar).
+  - **Importante (desde 21/08/2026):** o heartbeat NÃO confia mais só em `sock.user` (esse objeto fica em cache e continua preenchido mesmo com a conexão morta — foi exatamente o que aconteceu em 20/08: a sessão caiu à noite com erro de conflito, e o heartbeat antigo seguiu reportando "ativo" por horas porque só olhava se havia um usuário em memória). Agora o heartbeat faz um ping ativo de verdade contra os servidores do WhatsApp (`sock.sendPresenceUpdate('available')`, sem destinatário) com timeout de 8s a cada checagem, além de um flag `conexaoAberta` atualizado só pelos eventos reais `connection.update` (`open`/`close`). Só marca `ativo` se o ping responder dentro do timeout.
 - Frontend (`web/src/hooks/useBotStatus.js` + `web/src/components/SemaforoBot.jsx`): lê a linha a cada 30s e calcula a cor:
   - 🟢 verde — `status='ativo'` e heartbeat recente
   - 🟡 amarelo — `status='problema'` mas processo ainda respondendo (heartbeat recente)

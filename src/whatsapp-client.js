@@ -14,19 +14,41 @@ const logger = pino({ level: 'silent' });
 let sock = null;
 let connectedOnce = false;
 let heartbeatIniciado = false;
+// Reflete o último evento real de connection.update — não confiar só em sock.user,
+// que fica em cache e continua "preenchido" mesmo com a conexão morta (foi o que
+// aconteceu em 20/08: a sessão caiu e o heartbeat antigo seguiu reportando "ativo").
+let conexaoAberta = false;
 
 function getSocket() {
   return sock;
 }
 
-// Heartbeat de segurança: se o processo cair por completo, updated_at para
+// Ping ativo de verdade contra os servidores do WhatsApp — não só olha estado em
+// memória, faz uma chamada de rede leve (presence update sem destinatário) e exige
+// resposta dentro do timeout. Se a sessão estiver morta (socket preso, rede caída,
+// conflito de dispositivo etc.) essa chamada falha ou nunca resolve.
+async function conexaoRespondeDeVerdade() {
+  if (!sock || !sock.user || !conexaoAberta) return false;
+  try {
+    await Promise.race([
+      sock.sendPresenceUpdate('available'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout no ping de presença')), 8000)),
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Heartbeat de segurança: valida a conexão de verdade a cada 60s (não só se o
+// processo está de pé). Se o processo cair por completo, updated_at também para
 // de avançar e o dashboard passa a mostrar "vermelho" mesmo sem um evento explícito.
 function iniciarHeartbeat() {
   if (heartbeatIniciado) return;
   heartbeatIniciado = true;
-  setInterval(() => {
-    const conectado = !!sock?.user;
-    atualizarStatusBot(conectado ? 'ativo' : 'problema', conectado ? null : 'Socket WhatsApp desconectado');
+  setInterval(async () => {
+    const conectado = await conexaoRespondeDeVerdade();
+    atualizarStatusBot(conectado ? 'ativo' : 'problema', conectado ? null : 'WhatsApp não respondeu ao ping de verificação — conexão pode estar morta');
   }, 60 * 1000);
 }
 
@@ -55,10 +77,12 @@ async function startWhatsApp({ onMessage, onPoll, onVoice, onConnected }) {
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
+      conexaoAberta = false;
       console.log('\n📱 Escaneie o QR Code acima com seu WhatsApp!\n');
       atualizarStatusBot('problema', 'Aguardando escaneamento do QR Code');
     }
     if (connection === 'open') {
+      conexaoAberta = true;
       console.log('✅ WhatsApp conectado com sucesso!\n');
       atualizarStatusBot('ativo');
       if (!connectedOnce) {
@@ -67,6 +91,7 @@ async function startWhatsApp({ onMessage, onPoll, onVoice, onConnected }) {
       }
     }
     if (connection === 'close') {
+      conexaoAberta = false;
       const err = lastDisconnect?.error;
       const statusCode = err instanceof Boom ? err.output.statusCode : null;
       console.error('[whatsapp] Conexão encerrada. Código:', statusCode, '| Erro:', err?.message || err);
