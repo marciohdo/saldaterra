@@ -6,9 +6,9 @@ const NUMERO_TESTE = '5534996689999';
 
 const MENSAGENS = [
   {
-    agente: 'Luz.ia',
+    agente: 'Atendimento dos Pequenos Grupos (PG) Sal da Terra',
     texto:
-      '[TESTE] Oi, que alegria entrar em contato com a Igreja Sal da Terra! 🌟 Eu sou a Luz.ia e estou aqui pra te ajudar a encontrar seu Pequeno Grupo. Me conta, qual é o seu nome? 😊',
+      '[TESTE] Oi, que alegria entrar em contato com a Igreja Sal da Terra! 🌟 Eu sou o Atendimento dos Pequenos Grupos (PG) Sal da Terra e estou aqui pra te ajudar a encontrar seu Pequeno Grupo. Me conta, qual é o seu nome? 😊',
   },
   {
     agente: 'PG Visitante Acolhedor',

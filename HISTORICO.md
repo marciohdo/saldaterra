@@ -38,7 +38,7 @@ Baileys / whaileys (src/whatsapp-client.js)  — conexão WhatsApp via QR Code
 Servidor Express (src/server.js)             — roteia por perfil (admin / líder / visitante)
        ↓
 Agente Claude — Anthropic API (src/claude.js)
-  ├─ Luz.ia (src/agents/luz-ia.js)           — atende visitante novo, coleta dados, indica PG
+  ├─ Atendimento dos Pequenos Grupos (PG) Sal da Terra (src/agents/luz-ia.js) — atende visitante novo, coleta dados, indica PG
   └─ PG Visitante Acolhedor (src/agents/pg-visitante.js) — conversa com líder, atualiza status
        ↓
 Supabase (src/supabase.js)                   — LISTA_ACIONAMENTOS + LISTA_PGS

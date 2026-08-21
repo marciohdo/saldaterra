@@ -8,7 +8,7 @@ Agentes de inteligência artificial da Igreja Sal da Terra integrados ao WhatsAp
 
 | Agente | Função |
 |---|---|
-| **Luz.ia** | Atende visitantes, coleta dados e encontra o Pequeno Grupo (PG) ideal |
+| **Atendimento dos Pequenos Grupos (PG) Sal da Terra** | Atende visitantes, coleta dados e encontra o Pequeno Grupo (PG) ideal |
 | **PG Visitante Acolhedor** | Conversa com líderes e atualiza o status de visitantes |
 
 ---
@@ -114,7 +114,7 @@ Mensagem recebida
        ↓ não
 É visitante já cadastrado? → bloqueia e orienta
        ↓ não
-handleVisitante → Luz.ia (coleta dados e indica PG)
+handleVisitante → Atendimento dos Pequenos Grupos (PG) Sal da Terra (coleta dados e indica PG)
 ```
 
 Todas as mensagens passam por detecção de **prompt injection** antes de chegar ao Claude.
@@ -138,13 +138,13 @@ Um administrador que também seja líder tem acesso a ambos os fluxos — comand
 Verificado automaticamente pela tabela `LISTA_PGS` (coluna `CONTATO`) ou `LISTA_ACIONAMENTOS` (coluna `lider_telefone`). Recebe a lista de visitantes pendentes e pode atualizar o status de cada um.
 
 ### Visitante
-Qualquer número que não seja admin nem líder. Atendido pela Luz.ia.
+Qualquer número que não seja admin nem líder. Atendido pelo Atendimento dos Pequenos Grupos (PG) Sal da Terra.
 
 ---
 
-## Fluxo da Luz.ia (visitante)
+## Fluxo do Atendimento dos Pequenos Grupos (PG) Sal da Terra (visitante)
 
-A Luz.ia faz 7 perguntas uma por vez:
+O Atendimento dos Pequenos Grupos (PG) Sal da Terra faz 7 perguntas uma por vez:
 
 1. Nome completo
 2. Idade
@@ -251,7 +251,7 @@ saldaterra/
 │   ├── maps.js                # Cálculo de distância via Google Maps
 │   ├── load-env.js            # Carrega variáveis do .env
 │   └── agents/
-│       ├── luz-ia.js          # System prompt da Luz.ia (visitante)
+│       ├── luz-ia.js          # System prompt do Atendimento dos Pequenos Grupos (PG) Sal da Terra (visitante)
 │       └── pg-visitante.js    # System prompt do PG Visitante Acolhedor (líder)
 ├── data/
 │   └── auth_info/             # Sessão WhatsApp (gerada automaticamente)
@@ -275,7 +275,7 @@ Baileys (whatsapp-client.js)
        ↓  evento messages.upsert
 Servidor Express (server.js)
        ↓  roteia por perfil (admin / líder / visitante)
-Agente Claude (Luz.ia ou PG Visitante Acolhedor)
+Agente Claude (Atendimento dos Pequenos Grupos (PG) Sal da Terra ou PG Visitante Acolhedor)
        ↓  gera resposta com marcadores
 Supabase (LISTA_ACIONAMENTOS + LISTA_PGS)
        ↓  salva / atualiza / busca PG
